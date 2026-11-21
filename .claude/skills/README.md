@@ -1,7 +1,7 @@
 # Engineering skills used on this project
 
 These Claude Code skills shaped how the design package was built. They load automatically when Claude Code is
-started inside `furnace-engineering/`.
+started in this repository.
 
 | Skill | Upstream (licence) | Used for |
 |---|---|---|

@@ -2,7 +2,7 @@
 
 SHIVAS Technology Ltd · hot dip galvanizing division · design package Rev A · 2026-11-20 (updated 2026-11-21 for SH-PID-02A Rev U, the corner blower and the zinc enclosure)
 
-This is a stand-alone engineering project, separate from the website in the rest of this repository. It holds one
+This repository is a stand-alone engineering project. It holds one
 high-velocity pulse-fired furnace with a 6,700 × 1,250 × 1,310 kettle, its combustion system per P&ID SH-PID-02A Rev U, the
 zinc fume enclosure, the four-position pit dryer, the heat-recovery loop (trenches, mixing box S2, Ø1100 suction duct,
 recirculation blower at the SW corner) and the bleed stack. Everything is generated from one
@@ -66,11 +66,7 @@ python3 build.py --fast   # ≈1 min: calcs, GLB, viewer data (no STEP, no drawi
 
 Coordinates: mm, origin at the kettle centre on plan at FFL ±0.000, X east, Y north, Z up. GLB is Y-up as glTF requires.
 
-## Moving it to its own repository
+## History
 
-The folder has no dependency on the website files. To split it out with its history:
-
-```bash
-git subtree split --prefix=furnace-engineering -b furnace-engineering
-git push <new-repo-url> furnace-engineering:main
-```
+The package was started in `furnace-engineering/` of the SHIVAS website repository (Manu9017/STL) and moved here with its
+commit history on 2026-11-21. It has no dependency on the website files.

@@ -1,7 +1,7 @@
 # CLAUDE.md — SHV-FUR-6700 furnace engineering project
 
-This folder is a stand-alone engineering project. It is not part of the website in the parent repository, and the
-website brief in `../CLAUDE.md` does not apply here.
+This repository is a stand-alone engineering project for SHIVAS Technology Ltd. It is separate from the website
+(Manu9017/STL), and the website brief does not apply here.
 
 ## Rules
 - `basis/design_basis.yaml` is the single source of truth. Change a number there, never in the calc, CAD or drawing code.
