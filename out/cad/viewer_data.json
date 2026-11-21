@@ -3,10 +3,10 @@
  "rev": "A",
  "date": "2026-11-20",
  "counts": {
-  "INFO": 42,
+  "INFO": 51,
   "SUPERSEDED": 12,
   "MARGINAL": 2,
-  "PASS": 39,
+  "PASS": 44,
   "FAIL": 1
  },
  "checks": [
@@ -349,7 +349,29 @@
    "limit": null,
    "kind": "info",
    "status": "INFO",
-   "note": "inside the vented trench, not accessible"
+   "note": "in the vented link trench, not accessible"
+  },
+  {
+   "calc": "C-04",
+   "title": "Linings: casing skin, hearth and foundation, flue duct and trench, dryer pit (1-D, k(T))",
+   "name": "Flue duct skin in the south burner pit (D-26)",
+   "value": 67.9851,
+   "unit": "degC",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "pit air 40 \u00b0C; above the 60 \u00b0C touch limit, so guarded (FLU-05)"
+  },
+  {
+   "calc": "C-04",
+   "title": "Linings: casing skin, hearth and foundation, flue duct and trench, dryer pit (1-D, k(T))",
+   "name": "Flue duct heat loss in the pit",
+   "value": 276.5722,
+   "unit": "W/m2",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "\u22483.4 m\u00b2 of shell in the pit"
   },
   {
    "calc": "C-04",
@@ -497,6 +519,28 @@
   {
    "calc": "C-07",
    "title": "Flue passage and lined flue duct",
+   "name": "Flue duct length, port \u2192 junction (D-26)",
+   "value": 2.0446,
+   "unit": "m",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "south end wall, R700 bend, through the pit wall"
+  },
+  {
+   "calc": "C-07",
+   "title": "Flue passage and lined flue duct",
+   "name": "Flue duct pressure loss incl. R700 bend",
+   "value": 8.9381,
+   "unit": "Pa",
+   "limit": 10.0,
+   "kind": "max",
+   "status": "PASS",
+   "note": "the loop suction pulls the furnace; keep it small"
+  },
+  {
+   "calc": "C-07",
+   "title": "Flue passage and lined flue duct",
    "name": "D-10 duct 700 \u00d7 400 velocity",
    "value": 5.4032,
    "unit": "m/s",
@@ -597,7 +641,7 @@
    "calc": "C-09",
    "title": "Heat-recovery loop pressure budget and perforated-box distribution",
    "name": "Loop total (D-12 centre-fed boxes)",
-   "value": 70.9314,
+   "value": 71.9477,
    "unit": "mmWC",
    "limit": 72.0,
    "kind": "max",
@@ -608,7 +652,7 @@
    "calc": "C-09",
    "title": "Heat-recovery loop pressure budget and perforated-box distribution",
    "name": "Loop total vs fan if 72 mmWC is a 20 \u00b0C rating",
-   "value": 70.9314,
+   "value": 71.9477,
    "unit": "mmWC",
    "limit": 53.6572,
    "kind": "max",
@@ -970,7 +1014,7 @@
   {
    "calc": "C-15",
    "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
-   "name": "Open-face velocity, one door at the skimming stop",
+   "name": "Open-face velocity, east door at the skimming stop",
    "value": 0.6061,
    "unit": "m/s",
    "limit": 0.5,
@@ -981,8 +1025,19 @@
   {
    "calc": "C-15",
    "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Open-face velocity, west door lifted to skim",
+   "value": 0.5853,
+   "unit": "m/s",
+   "limit": 0.5,
+   "kind": "min",
+   "status": "PASS",
+   "note": "D-27: opening +0.450 \u2192 +1.450"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
    "name": "Open-face velocity, both doors at the skimming stop",
-   "value": 0.3329,
+   "value": 0.3265,
    "unit": "m/s",
    "limit": 0.5,
    "kind": "min",
@@ -992,13 +1047,24 @@
   {
    "calc": "C-15",
    "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
-   "name": "Open-face velocity, one door at full lift",
-   "value": 0.3031,
+   "name": "Open-face velocity, east door at full lift",
+   "value": 0.3768,
    "unit": "m/s",
    "limit": null,
    "kind": "info",
    "status": "INFO",
    "note": "maintenance only, burners at low fire (D-25)"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "West side open with the kettle cover down",
+   "value": 0.2612,
+   "unit": "m/s",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "bath covered, no dipping; ZFE damper to 50 % (D-27)"
   },
   {
    "calc": "C-15",
@@ -1065,6 +1131,94 @@
    "kind": "info",
    "status": "INFO",
    "note": "ZFE fan and bag filter add their own losses (O-16)"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Idle-bath loss, open (8.4 m\u00b2)",
+   "value": 79.6799,
+   "unit": "kW",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "\u03b5 0.35 (A-14), enclosure air 60 \u00b0C"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Idle-bath loss with the west door down as the cover",
+   "value": 2.1789,
+   "unit": "kW",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "cover hot face \u2248441 \u00b0C, top skin \u224871 \u00b0C"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Heat saved while the bath is covered",
+   "value": 77.5011,
+   "unit": "kW",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "D-27"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Gas saved per day of idle cover",
+   "value": 78.2839,
+   "unit": "Nm3/day",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "6 h/day idle (A-15), available heat 60 %"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Cover top skin temperature",
+   "value": 70.7046,
+   "unit": "degC",
+   "limit": 80,
+   "kind": "max",
+   "status": "PASS",
+   "note": "people reach over it at the west side"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "West door mass (estimate)",
+   "value": 1501.9834,
+   "unit": "kg",
+   "limit": null,
+   "kind": "info",
+   "status": "INFO",
+   "note": "SS 304 3 mm + MS 2 mm skins, 75 blanket + 25 microporous, RHS frame"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Slew-drive torque per end at horizontal",
+   "value": 9.0249,
+   "unit": "kN\u00b7m",
+   "limit": 10.0,
+   "kind": "max",
+   "status": "PASS",
+   "note": "\u2265 10 kN\u00b7m output drive (A)"
+  },
+  {
+   "calc": "C-15",
+   "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
+   "name": "Load per carriage hoist",
+   "value": 0.931,
+   "unit": "t",
+   "limit": 2.0,
+   "kind": "max",
+   "status": "PASS",
+   "note": "2 t chain hoists"
   }
  ],
  "decisions": [
@@ -1242,6 +1396,27 @@
    "why": "One door at the skimming stop keeps the open-face velocity at 0.61 m/s, above the 0.5 m/s minimum for an enclosing hood on a hot process. Both doors, or one at full lift, drop it to 0.30\u20130.33 m/s.",
    "src": "ZEN annexure, ACGIH practice",
    "ev": "C-15"
+  },
+  {
+   "id": "D-26",
+   "what": "The flue leaves through the south end wall at the SW corner, 50 mm above the hearth (passage 700 \u00d7 300 at \u22121.265 \u2192 \u22120.965, castable port block 1,000 \u00d7 600, owner's instruction 21 Nov 2026). The lined duct (D-10 build-up) passes a fabric expansion joint, then turns west on a radiused horizontal bend, centreline R700 (R/W 1.0), in the bottom-left (SW) corner of the south burner pit, and runs through the pit's west wall into the junction. No mitred corner anywhere on the flue. The junction moves to Y \u22125.08 m, gets a \u22121.350 sump with 60\u00b0 benching and a castable impingement face; the return trench lengthens and the suction trench shortens. The duct is guarded with expanded metal in the pit and carries a cleanout door, TE-301 and the furnace-pressure tap PT-301.",
+   "why": "Owner's instruction. A low outlet makes the combustion gas sweep the full kettle-wall height before it leaves. A radiused bend costs K \u2248 0.25 against \u22481.2 for a mitre. Keeping the duct in the pit corner leaves the burner side of the pit clear.",
+   "src": "Owner, Rev H, D-10",
+   "ev": "C-04, C-07, C-09"
+  },
+  {
+   "id": "D-27",
+   "what": "The west enclosure door is both the skimming door and the kettle cover. It is a 7,850 \u00d7 2,450 \u00d7 110 insulated panel (3 mm SS 304 hot skin, 75 mm blanket + 25 mm microporous, 2 mm MS outer skin) hung on two end carriages in guide columns outside the wall plane. Hoists lift the carriages 1,000 for skimming. With the carriages seated, worm slew drives on the carriages turn the panel 90\u00b0 inward about its inner bottom edge (+0.450), so it lies on the kettle hot skin down, from X \u22121.554 to +0.896 (whole kettle and flange). The door-head girts rise to +2.950 so the panel clears them as it turns; the bath thermocouple heads drop to +0.420 so the cover passes over them; four rest posts on the east deck take its far edge. The east door stays a vertical-lift skimming door with the 4 large windows; the west door gets 4 smaller glass-ceramic windows.",
+   "why": "Owner's instruction. Covering an idle bath saves \u224877 kW (C-15, estimate). Lift-then-turn keeps the skimming opening the same size as the east door's (0.59 m/s open-face velocity) and needs no rope across the enclosure.",
+   "src": "Owner, ZEN annexure",
+   "ev": "C-15"
+  },
+  {
+   "id": "D-28",
+   "what": "Dryer: the raised fixed cover over P2\u2013P3 (underside +0.550) is a door garage; both sliding doors (1,550 \u00d7 7,700 \u00d7 240) park under it. Each door is driven by one rack and pinion on its north side only (rack under the door edge, pinion and BK50 gearmotor fixed), runs on 4 wheels (V-groove north, flat south) and has 4 limit switches (open slow-down, open stop, close slow-down, close stop) on a mounting bar in ambient air, plus end buffers. P4 arrival is detected by a cat-whisker switch on a cantilever bracket from the north wall. Each chain strand has its own gearmotor on a split head shaft in its own side pocket (no line shaft), synchronised by VFDs with encoders.",
+   "why": "Owner's instructions. The doors lengthen from 1,400 to 1,550 so they overlap the 1,200 openings by 175 a side; both open doors fit under the 3,300 cover with 100 to spare.",
+   "src": "Owner, SH-RBR-01/02, HDG",
+   "ev": "\u2014"
   }
  ],
  "open": [
@@ -1354,6 +1529,24 @@
    "effect": "C-15"
   },
   {
+   "id": "O-20",
+   "what": "Flue duct in the south burner pit (D-26): hot surface (\u224868 \u00b0C skin, guarded) near the burner-2 gas train and the DN50 main drop; review against the combustion-safety study (O-13) and confirm the pit fan still sweeps the duct corner.",
+   "owner": "SHIVAS",
+   "effect": "Pit layout"
+  },
+  {
+   "id": "O-21",
+   "what": "Kettle-cover interlocks (D-27): crane position (no jig over the bath), both carriages seated, roof covers state; slew-drive torque and holding rating from the supplier (needs \u2265 9.0 kN\u00b7m per end).",
+   "owner": "SHIVAS / supplier",
+   "effect": "C-15"
+  },
+  {
+   "id": "O-22",
+   "what": "Dryer switches at temperature: the P4 cat-whisker switch sits in 100\u2013120 \u00b0C air; confirm a head rated \u2265 150 \u00b0C or move the body outside the wall with a through-wall rod.",
+   "owner": "Supplier",
+   "effect": "D-28"
+  },
+  {
    "id": "O-19",
    "what": "SH-PID-02A Rev U start-up sequence text still says \"PILOT: C2 opens, C7 sparks at C18, C6 must prove the pilot\" and lists trip C17. Neither C17 nor C18 is on the bill of material, and note 2 says direct spark through C12 with no pilot. Correct the sequence to: ignition gas C2 opens, C7 sparks at C12, C6 proves the ignition flame.",
    "owner": "SHIVAS / Eclipse",
@@ -1430,8 +1623,28 @@
   },
   {
    "id": "A-13",
-   "what": "Skimming-door windows sit in the doors at a +1.300 sill (eye level from FFL); the annexure does not place them.",
+   "what": "Windows sit in the doors at a +1.300 sill (eye level from FFL): 4 \u00d7 600 \u00d7 600 in the east door, 4 \u00d7 300 \u00d7 300 glass-ceramic in the west door because it is also the kettle cover.",
    "cons": "\u2014"
+  },
+  {
+   "id": "A-14",
+   "what": "Idle zinc surface emissivity 0.35 (oxidised, with ash) for the open-bath loss.",
+   "cons": "Neutral"
+  },
+  {
+   "id": "A-15",
+   "what": "The bath stands idle and can be covered 6 h a day.",
+   "cons": "\u2014"
+  },
+  {
+   "id": "A-16",
+   "what": "West-door slew drives \u2265 10 kN\u00b7m output, 30 kN\u00b7m holding; carriage hoists 2 t.",
+   "cons": "\u2014"
+  },
+  {
+   "id": "A-17",
+   "what": "Chain drives 2 \u00d7 3.7 kW (one per strand), replacing the single 5.5 kW.",
+   "cons": "Conservative"
   },
   {
    "id": "A-07",
@@ -1475,5 +1688,5 @@
   "CBA": "Crash-barrier plant annexure (pit fan)",
   "THIS": "This design (SHV-FUR-6700 Rev A)"
  },
- "n_basis": 171
+ "n_basis": 182
 }

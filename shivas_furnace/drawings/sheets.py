@@ -56,7 +56,12 @@ def registry():
     return _REG
 
 
-def parts(include=None, exclude=("load", "enclosure"), skip_layers=("flow",), bbox=None):
+def shp(p):
+    """Shape used on the drawings: the part's proxy if it has one (very detailed parts), else the part itself."""
+    return p.proxy if p.proxy is not None else p.shape
+
+
+def parts(include=None, exclude=("load", "enclosure"), skip_layers=("flow", "detail"), bbox=None):
     out = []
     for p in registry().parts:
         if include and p.system not in include:
@@ -64,7 +69,7 @@ def parts(include=None, exclude=("load", "enclosure"), skip_layers=("flow",), bb
         if p.system in exclude or p.layer in skip_layers or p.hidden:
             continue
         if bbox is not None:
-            bb = p.shape.val().BoundingBox()
+            bb = shp(p).val().BoundingBox()
             (x0, x1), (y0, y1), (z0, z1) = bbox
             if bb.xmax < x0 or bb.xmin > x1 or bb.ymax < y0 or bb.ymin > y1 or bb.zmax < z0 or bb.zmin > z1:
                 continue
@@ -82,13 +87,13 @@ def halfspace(axis, value, keep):
 
 def cut_parts(ps, cut):
     if cut is None:
-        return [(p, p.shape.val()) for p in ps]
+        return [(p, shp(p).val()) for p in ps]
     axis, value, keep = cut
     hs = halfspace(axis, value, keep)
     out = []
     for p in ps:
         try:
-            s = p.shape.val().intersect(hs)
+            s = shp(p).val().intersect(hs)
             if s.isValid() and s.Volume() > 1:
                 out.append((p, s))
         except Exception:
@@ -107,7 +112,7 @@ def section_faces(ps, cut):
     out = []
     for p in ps:
         try:
-            s = p.shape.val().intersect(plane)
+            s = shp(p).val().intersect(plane)
             for f in s.Faces():
                 if f.Area() > 1:
                     out.append((p, f))

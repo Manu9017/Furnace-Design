@@ -35,7 +35,8 @@ def ga001():
                                 (-6700, -7600, "HRL-12 suction duct Ø1100 at +0.900", 5, -30),
                                 (G.stack[0], G.stack[1], "STK-01 stack Ø400 × 12 m", -40, -8), (7600, -7600, "GAS-01 gas train A1–A11 (PNG in at A1)", 10, -25),
                                 (3400, -5100, "BLW combustion air blower AEP-VB-2.5, 7.5 HP", 20, 18), (2900, 5500, "VEN-PF-N pit fan", 25, 12),
-                                (-2650, -2500, "HRL-03 junction", -8, 30), (-1800, -2500, "FLU-01 lined flue duct", 22, 24)]:
+                                (-2650, G.flue_run_y, "HRL-03 junction (sump −1.350)", -30, 26), (-1100, -4900, "FLU-01 flue: S end wall, R700 bend (D-26)", 26, -20),
+                                (-7500, 3000, "DRY-11a raised fixed cover; doors park under it (D-28)", -40, 40)]:
         s.callout(T, u, v, txt, dx, dy)
     # north arrow
     nx, ny = 530, 555
@@ -49,7 +50,8 @@ def ga001():
              "Plant coordinates: X east, Y north. Origin = kettle centre. Grid of the HDG plant model maps as X = 1000(x − 45.5), Y = −1000(z − 8.5).",
              "Layout of loop equipment follows the SHIVAS HDG plant model with the changes in the decision register (D-13, D-22).",
              "Gas and air: SH-PID-02A Rev U (D-23). Header DN65 on sleepers at +0.140; DN50 main into both burner pits; B and C trains in the pits.",
-             "Zinc fume enclosure on the casing deck (D-24, D-25): left off the plan for clarity, see GA-007.",
+             "Zinc fume enclosure on the casing deck (D-24, D-25, D-27): left off the plan for clarity, see GA-007; the west door is also the kettle cover.",
+             "Flue: south end wall at the SW corner, 50 above the hearth; radiused R700 bend in the south pit, no mitred corners (D-26). Details GA-008.",
              "Heat-recovery trenches 1,000 deep clear (Hold H1 / O-01). Flue in a lined steel duct in a vented trench (D-10).",
              "This drawing is generated from the 3D model SHV-FUR-6700 Rev A; the STEP file is the master geometry."], x=560, y=95)
     return s
@@ -69,10 +71,10 @@ def ga002():
     s.dim(T, 25, (1500, -G.lfX), (1500, -G.cXi), 22, vertical=True)
     s.dim(T, 25, (G.cYi, 0), (G.cYi, G.bX), -40, vertical=True)
     s.dim(T, 25, (G.cYo, -1500), (G.bpitY1, -1500), -40)
-    s.dim(T, 25, (G.flueY - 500, G.cXo), (G.flueY + 500, G.cXo), 20)
+    s.dim(T, 25, (-G.cYo, -G.flue_pass_X[0]), (-G.cYo, -G.flue_pass_X[1]), 22, vertical=True)
     for (u, v, txt, dx, dy) in [(G.cYo + 600, G.bX, "BUR-01 burner 1 Bloom HV-400, fires south (left)", 20, 40), (-G.cYo - 600, -G.bX, "BUR-02 burner 2, fires north", -20, -40),
                                 (3300, 700, "TOP-07 curved SS shield NW, 750 × 1,500 dev.", 30, 30), (-3300, -700, "TOP-07 SS shield SE", -30, -30),
-                                (0, 0, "KET-01 kettle + zinc (cut)", 40, 12), (G.flueY, G.cXo + 400, "FLU-01 flue port 700 × 300 → lined duct 700 × 400", -30, 30),
+                                (0, 0, "KET-01 kettle + zinc (cut)", 40, 12), (-4700, 1000, "FLU-01 flue port 700 × 300 in the S end wall → R700 bend (below, −1.115)", -40, 30),
                                 (2000, 0, "Leak pit below (CIV-02)", 20, -30), (5150, 700, "B4 → B2 → B1 → B3 → B5 and C3 → C1 → C2 → C4 → C19 (SH-PID-02A Rev U)", 25, -38)]:
         s.callout(T, u, v, txt, dx, dy)
     s.text("N →", (760, 520), 5)
@@ -136,7 +138,7 @@ def ga004():
     s.dim(T, 25, (-G.cYo, -1500), (-G.bpitY1, -1500), -22)
     s.levels(T, 6500, LEVELS, 8)
     for (u, v, txt, dx, dy) in [(-G.cYo - 300, G.bZ, "BUR-01 burner 1 Bloom HV-400", -10, 45), (-G.cYi + 500, G.bZ, "flame axis −0.390, Ø197, fires south", 30, 30),
-                                (-G.lfY + 150, G.bZ, "LIN-05 burner block 400 × 400", 10, -40), (2500, -450, "flue port 700 × 300 (west face)", 20, 35),
+                                (-G.lfY + 150, G.bZ, "LIN-05 burner block 400 × 400", 10, -40), (4300, G.flue_zc, "FLU-01 flue port on the S end wall, duct cut (D-26)", 20, -30),
                                 (-5000, G.bpit_floor + 300, "VEN-PF-N extract at −1.450", -10, -18), (2000, G.pad_top - 300, "CIV-02 leak pit 700 × 700 × 600", 20, -18)]:
         s.callout(T, u, v, txt, dx, dy)
     T2 = s.view("NORTH BURNER PIT — ELEVATION LOOKING SOUTH (CUT AT Y = +5.800, IN FRONT OF THE PIT END WALL)", "north", (215, 200), 15, cut=(1, 5800, "-"),
@@ -147,6 +149,7 @@ def ga004():
         s.callout(T2, u, v, txt, dx, dy)
     s.notes(["Burner pits 3,000 × 1,800 clear, floor −1.750 (Rev K). Handrails 1,000 / 500 / toe board; cat ladder each pit.",
              "Pit fans D-09: one 3 HP fan per pit, extracting 300 above the pit floor (LPG is heavier than air), ≥ 189 m³/h each.",
+             "The section B–B cuts the flue stub and bend in the south pit: the duct sits in the pit's bottom-left corner under an expanded-metal guard (D-26).",
              "Burner trains per SH-PID-02A Rev U: main and ignition legs merge at a tee below the burner into one 2\" inlet NG-50-113 (hold H1).",
              "C12 direct-spark ignitor (no pilot), C6 UV with ½\" cooling air via C9 + C11, C7 TZI 8 beside the burner, C5 BCU 370 to the PLC S7-1500.",
              "Burner body drawn as an envelope; replace with the Bloom HV-400 GA before fabrication (O-03)."], x=400, y=110)
@@ -162,7 +165,7 @@ def ga005():
     for x in G.dP:
         s.callout(T, x, 650, f"P{G.dP.index(x) + 1}", 0, 12)
     for (u, v, txt, dx, dy) in [(G.dX0 + 175, -700, "DRY-04 supply box 1,300 × 350, centre fed", -20, -35), (G.dX1 - 175, -700, "DRY-05 extraction box", 20, -35),
-                                (-7500, 125, "DRY-11 deck + fixed cover", 25, 30), (-5250, 430, "DRY-03 door P4", 30, 22)]:
+                                (-7500, 675, "DRY-11a raised fixed cover (door garage, D-28)", 25, 30), (-5350, 380, "DRY-03 door P4 (parks under the cover)", 30, 22)]:
         s.callout(T, u, v, txt, dx, dy)
     T2 = s.view("LOOP PLAN — SECTION AT −0.200", "top", (450, 245), 75, cut=(2, -200, "-"),
                 bbox=((-14500, 1000), (-9500, 4500), (-1500, 2000)), exclude=("load", "enclosure"), clip=(-14300, 500, -9200, 4300))
@@ -172,14 +175,14 @@ def ga005():
     for (u, v, txt, dx, dy) in [(-11575, -7600, "HRL-07 AEP-ZA-9.0, axis +0.900", -20, 22), (-6700, -7600, "HRL-12 Ø1100", 0, -18),
                                 (-13650, -7600, "HRL-07h motor 30 HP", -10, -20), (-10250, -7600, "HRL-12a reducer + HRL-07c straightener", 10, 24)]:
         s.callout(T3, u, v, txt, dx, dy)
-    for (u, v, txt, dx, dy) in [(-3175, 0, "HRL-02 return 900 × 1,000 · 100 °C", 25, 20), (-2650, -2500, "HRL-03 junction", 30, 8),
-                                (-2650, -5000, "HRL-04 suction 1,000 × 1,000", 30, 0), (-2650, -7600, "HRL-05 mixing box S2", 30, -12),
+    for (u, v, txt, dx, dy) in [(-3175, 0, "HRL-02 return 900 × 1,000 · 100 °C", 25, 20), (-2650, G.flue_run_y, "HRL-03 junction, sump −1.350", 30, 8),
+                                (-2650, -6300, "HRL-04 suction 1,000 × 1,000", 30, 0), (-2650, -7600, "HRL-05 mixing box S2", 30, -12),
                                 (-11400, -4000, "HRL-08 discharge 1,100 × 1,000 · 120 °C", -10, -18), (-11575, -8100, "HRL-07 blower outlet drops in at the corner", -20, -10),
-                                (-1800, -2500, "FLU-01 flue 800 °C", 25, 18)]:
+                                (-1300, -5000, "FLU-01 flue 800 °C, R700 bend", 25, 18)]:
         s.callout(T2, u, v, txt, dx, dy)
     rows = [["Recirculation blower", "AEP-ZA-9.0 · 48,000 m³/h at 120 °C · 72 mmWC · 30 HP"], ["Mixing", "flue + return + fresh → ≈124 °C (C-08)"],
             ["Dryer duty", "≈209 kW across the loads (C-08)"], ["Bleed", "4,729 Nm³/h → Ø400 × 12 m stack, ≈150 kW to the HX"],
-            ["Perforated faces", "Ø15 @ 37 staggered, 14.9 % open, ≈5,900 holes each (D-12)"], ["Loop pressure", "≈71 mmWC hot (C-09) — confirm fan rating basis (O-07)"],
+            ["Perforated faces", "Ø15 @ 37 staggered, 14.9 % open, ≈5,900 holes each (D-12)"], ["Loop pressure", "≈72 mmWC hot (C-09), at the fan's 72 — confirm rating basis (O-07)"],
             ["Blower position", "SW corner, discharge straight north (D-22); Ø1100 suction duct ≈6.6 m"]]
     s.table(560, 250, 2, rows, (60, 200), h=6, size=2.0, head=["Item", "Value"])
     return s
@@ -198,7 +201,8 @@ def ga006():
     x2 = 24 + 2 * sum(w) + 12
     s.text("LEVELS SCHEDULE", (x2, 577), 3.0)
     lv = [[lab.split(" ", 1)[0], lab.split(" ", 1)[1]] for _z, lab in LEVELS] + [["−1.000", "loop trench clear floor (Hold H1)"], ["−1.100", "mixing box floor"],
-          ["−1.400", "dryer clear floor"], ["+0.500", "air ring centreline"], ["+0.900", "suction duct / recirc. fan axis"], ["+2.456", "enclosure door head"],
+          ["−1.400", "dryer clear floor"], ["−1.115", "flue duct centreline"], ["−1.350", "junction sump floor"], ["+0.450", "kettle-cover pivot / underside"],
+          ["+0.500", "air ring centreline"], ["+0.550", "dryer fixed-cover underside"], ["+0.900", "suction duct / recirc. fan axis"], ["+2.950", "enclosure door head"],
           ["+4.000", "bleed duct centreline"], ["+4.976", "enclosure top beams"], ["+12.000", "stack top"]]
     y = s.table(x2, 572, 2, lv, (24, 72), h=4.6, size=1.9, head=["Level m", "Description"])
     s.text("DESIGN DATA", (x2, y - 8), 3.0)
@@ -206,7 +210,8 @@ def ga006():
           ["Installed", "1,172 kW (118 Nm³/h)"], ["At 6.0 t/h", "≈761 kW, 12.8 Nm³/t"], ["Capacity", "6.0–6.7 t/h at 25 kW/m²"],
           ["Comb. air", "AEP-VB-2.5 7.5 HP · 1,400 m³/h"], ["Dryer", "4 pos. 6.0 × 7.5 × 1.4 m, 209 kW"],
           ["Recirc.", "AEP-ZA-9.0 48,000 m³/h, SW corner"], ["Stack", "Ø400 × 12 m, 15 m/s"],
-          ["Enclosure", "8.2 × 2.75 × 4.72 m, 20,000 m³/h"]]
+          ["Enclosure", "8.2 × 2.75 × 4.72 m, 20,000 m³/h"], ["Kettle cover", "west door, saves ≈77 kW idle"],
+          ["Flue", "S end, SW corner, R700 bend"]]
     s.table(x2, y - 12, 2, dd, (24, 72), h=4.6, size=1.9, head=["Item", "Value"])
     return s
 
@@ -214,7 +219,8 @@ def ga006():
 def ga007():
     s = Sheet("SHV-FUR-6700-GA-007", "ZINC FUME ENCLOSURE", "Section A–A, east elevation and roof plan; frame, skimming doors, sliding covers, extraction")
     zt = G.deck + B.v("enclosure.height")
-    zg = G.deck + 2200
+    zg = B.v("enclosure.door_head_z")
+    XI, ZP = B.v("enclosure.west_pivot")
     inc = ("enclosure", "kettle", "topclose", "casing", "lining")
     T = s.view("SECTION A–A (Y = 250) LOOKING NORTH", "south", (165, 300), 30, cut=(1, 250, "+"),
                bbox=((-3200, 3200), (-200, 5000), (-1700, 5600)), include=inc, exclude=("load",), clip=(-3100, 3100, -1650, 5400), title_dy=46)
@@ -224,10 +230,18 @@ def ga007():
     s.dim(T, 30, (-1700, G.deck), (-1700, zt), -14, vertical=True)
     s.dim(T, 30, (1800, G.deck), (1800, zg), 10, vertical=True)
     s.dim(T, 30, (1800, G.deck), (1800, 1200), 4, vertical=True)
-    s.levels(T, 3100, [(zt, "+4.976 top beams"), (zg, "+2.456 door head"), (1200, "+1.200 door bottom at skimming stop"), (G.deck, "+0.256 deck"),
-                       (0, "±0.000 FFL"), (G.bZ, "−0.390 burner axis")], 8)
-    for (u, v, txt, dx, dy) in [(-1011, 4476, "ZEN-11 slot plenum 500 × 700, slots 8 × 700 × 30", -40, 26), (800, zt + 200, "ZEN-09 sliding roof covers", 20, 22),
-                                (-1485, 1300, "ZEN-07 skimming door (vertical lift)", -40, -10), (-1321, 2600, "ZEN-02 door-head girt ISMB 300", -40, 12),
+    s.dim(T, 30, (-1900, ZP), (-1900, ZP + 2450), -8, vertical=True)
+    s.levels(T, 3100, [(zt, "+4.976 top beams"), (zg, "+2.950 door head"), (1450, "+1.450 west door bottom, skimming"), (1200, "+1.200 east door bottom, skimming"),
+                       (ZP, "+0.450 west pivot = cover underside"), (G.deck, "+0.256 deck"), (0, "±0.000 FFL"), (G.bZ, "−0.390 burner axis")], 8)
+    s.doc.layers.add("PHANTOM", color=6, linetype="PHANTOM")
+    ox, oy, sc = 165, 300, 30
+    P = lambda u, v: (ox + u / sc, oy + v / sc)
+    s.msp.add_lwpolyline([P(XI, ZP), P(XI + 2450, ZP), P(XI + 2450, ZP + 110), P(XI, ZP + 110)], close=True, dxfattribs={"layer": "PHANTOM"})
+    s.msp.add_arc(P(XI, ZP), 2450 / sc, 0, 90, dxfattribs={"layer": "PHANTOM"})
+    s.callout(T, XI + 1800, ZP + 60, "kettle-cover position (west door turned 90°)", 30, -40)
+    for (u, v, txt, dx, dy) in [(-981, 4476, "ZEN-11 slot plenum 500 × 700, slots 8 × 700 × 30", -40, 26), (800, zt + 200, "ZEN-09 sliding roof covers", 20, 22),
+                                (-1609, 1700, "ZEN-07a west door = kettle cover", -40, -10), (-1311, 3100, "ZEN-02 door-head girt ISMB 300", -40, 12),
+                                (XI, ZP, "ZEN-05c carriage + slew drive (pivot)", -40, -30), (1485, 1300, "ZEN-07b east door (vertical lift)", 25, -20),
                                 (2600, zt - 500, "ZEN-05 rail on outrigger, knee brace", 20, 14), (1485, zt - 250, "ZEN-08 chain hoist", 25, -14),
                                 (0, -400, "KET-01 kettle (cut)", 30, -20)]:
         s.callout(T, u, v, txt, dx, dy)
@@ -256,20 +270,80 @@ def ga007():
     except Exception:
         pass
     rows = [["Capture", "20,000 m³/h (≥ 16,750 required), 3.1 changes/min"], ["Rope slot, doors shut", "≈3.4 m/s inflow"],
-            ["One door at skimming stop", "≈0.61 m/s open face (≥ 0.5)"], ["Slots", "≈16.5 m/s; plenum/slot 0.48 (≤ 0.5)"],
-            ["Header · outlet", "≈13.2 · ≈14.4 m/s"], ["Hood loss to the flange", "≈52 mmWC (ZFE fan and filter extra, O-16)"]]
+            ["East door at skimming stop", "≈0.61 m/s open face (≥ 0.5)"], ["West door lifted to skim", "≈0.59 m/s open face (≥ 0.5)"],
+            ["Slots", "≈16.5 m/s; plenum/slot 0.48 (≤ 0.5)"], ["Header · outlet", "≈13.2 · ≈14.4 m/s"],
+            ["Hood loss to the flange", "≈52 mmWC (ZFE fan and filter extra, O-16)"], ["Kettle cover on an idle bath", "≈77 kW saved; top skin ≈71 °C"],
+            ["Slew drive per end", "≈9.0 kN·m at horizontal (≤ 10)"]]
     if c15:
         ck = {c["name"]: c["value"] for c in c15["checks"]}
         rows[1][1] = f"≈{ck['Rope-slot inflow, doors and roof closed']:.1f} m/s inflow"
-        rows[2][1] = f"≈{ck['Open-face velocity, one door at the skimming stop']:.2f} m/s open face (≥ 0.5)"
-        rows[5][1] = f"≈{ck['Hood static pressure at the outlet flange']:.0f} mmWC (ZFE fan and filter extra, O-16)"
-    s.table(450, 168, 2, rows, (52, 120), h=5.6, size=1.9, head=["C-15", "Result"])
-    s.notes(["Enclosure on the casing deck; wall plane = casing outer face, inside 8,212 × 2,762 × 4,720 (D-24). Posts SHS 120 over the casing walls.",
-             "Both long sides open full length below the ISMB 300 door-head girts. Skimming doors lift in guides outside the wall plane: 1,000 skimming stop, 2,150 full (D-25).",
+        rows[2][1] = f"≈{ck['Open-face velocity, east door at the skimming stop']:.2f} m/s open face (≥ 0.5)"
+        rows[3][1] = f"≈{ck['Open-face velocity, west door lifted to skim']:.2f} m/s open face (≥ 0.5)"
+        rows[6][1] = f"≈{ck['Hood static pressure at the outlet flange']:.0f} mmWC (ZFE fan and filter extra, O-16)"
+        rows[7][1] = f"≈{ck['Heat saved while the bath is covered']:.0f} kW saved; top skin ≈{ck['Cover top skin temperature']:.0f} °C"
+        rows[8][1] = f"≈{ck['Slew-drive torque per end at horizontal']:.1f} kN·m at horizontal (≤ 10)"
+    s.table(450, 178, 2, rows, (52, 120), h=5.6, size=1.9, head=["C-15", "Result"])
+    s.notes(["Enclosure on the casing deck; wall plane = casing outer face, inside 8,212 × 2,762 × 4,720 (D-24). Corner posts SHS 150 on the cap-beam corners.",
+             "Both long sides open full length below ISMB 300 door-head girts at +2.950. East door lifts in guides: 1,000 skimming stop, 1,700 full (D-25).",
+             "West door (D-27): lifts 1,000 on its carriages to skim; seated, it turns 90° inward on worm slew drives and lies on the kettle as an insulated cover (phantom).",
              "Only one door may be open at a time (interlock O-18); both open drops the open-face velocity to ≈0.33 m/s (C-15).",
              "Roof covers split on the centreline with a 200 rope slot; each slides 1,400 outward on rails and racks carried on outriggers at both end walls.",
              "Slot plenums inside both top edges; header outside the north end wall; Ø700 north then east to a flanged stub at X +4.6 m (bag filter O-16).",
-             "Member sizes are assumptions pending the structural check (O-17)."], x=24, y=150, w=400)
+             "Member sizes are assumptions pending the structural check (O-17). Ø20 tie-rod X-bracing in the upper long walls and the end walls is not drawn; see the 3D model."], x=24, y=150, w=400)
+    return s
+
+
+def ga008():
+    s = Sheet("SHV-FUR-6700-GA-008", "DETAILS — FLUE OUTLET AND DRYER DOORS", "Flue outlet on the south end wall with the R700 bend (D-26); dryer cover, doors, drives and switches (D-28)")
+    s.doc.layers.add("PHANTOM", color=6, linetype="PHANTOM")
+    inc_f = ("flue", "civil", "casing", "lining", "loop", "instr")
+    T1 = s.view("FLUE OUTLET — PLAN AT −1.115 (SOUTH BURNER PIT)", "top", (172, 704), 25, cut=(2, G.flue_zc, "-"),
+                bbox=((-3300, 300), (-6300, -3500), (-2000, 0)), include=inc_f, exclude=("load",), clip=(-3300, 300, -6200, -3600), title_dy=16)
+    cx, cy = G.flue_bend_c
+    s.dim(T1, 25, (G.flue_pass_X[0], -G.cYo), (G.flue_pass_X[1], -G.cYo), 18)
+    s.dim(T1, 25, (cx, G.flue_run_y - 506), (cx, G.flue_run_y + 506), -14, vertical=True)
+    s.dim(T1, 25, (G.flue_xc - 506, -G.cYo), (G.flue_xc - 506, G.flue_ys), -10, vertical=True)
+    for (u, v, txt, dx, dy) in [(cx + 495, cy - 495, "R700 on the centreline (R/W 1.0), no mitre", 30, -12), (G.flue_xc, -G.cYo - 130, "FLU-04 fabric expansion joint", 28, 14),
+                                (-1600, G.flue_run_y, "sleeve 1,212 × 912 through the pit wall", -10, 26), (-2700, G.flue_run_y, "HRL-03 junction, castable face", 10, -46),
+                                (cx + 853 * 0.7, cy - 853 * 0.7, "FLU-06 cleanout door", 30, -26), (G.flue_xc, -3975, "LIN-06 port block 1,000 × 600", 26, 18)]:
+        s.callout(T1, u, v, txt, dx, dy)
+    T2 = s.view("FLUE OUTLET — SECTION ON THE DUCT CENTRELINE (X = −0.775) LOOKING EAST", "west", (240, 540), 25, cut=(0, G.flue_xc, "+"),
+                bbox=((-800, 1500), (-6300, -3000), (-2000, 400)), include=inc_f, exclude=("load",), clip=(3000, 6200, -2000, 400), title_dy=14)
+    s.levels(T2, 6200, [(G.f_top, "−1.315 hearth"), (G.flue_pass_z[0], "−1.265 port sill"), (G.flue_pass_z[1], "−0.965 port head"), (G.bpit_floor, "−1.750 pit floor"), (0, "±0.000 FFL")], 6)
+    s.callout(T2, G.cYi + 120, G.flue_zc, "passage 700 × 300, 50 above the hearth", 20, 26)
+    inc_d = ("dryer", "instr", "civil")
+    T3 = s.view("DRYER TOP — PLAN (DOORS CLOSED)", "top", (822, 430), 50, bbox=((-11000, -4000), (-5200, 5200), (-300, 1000)), include=inc_d, exclude=("load",),
+                clip=(-11000, -4000, -5000, 5000), title_dy=34)
+    s.dim(T3, 50, (-10425, 4300), (-8875, 4300), 10)
+    s.dim(T3, 50, (-9150, 4300), (-5850, 4300), 18)
+    s.dim(T3, 50, (-10350, -4300), (-9150, -4300), -10)
+    for (u, v, txt, dx, dy) in [(-7500, 0, "DRY-11a raised fixed cover (+0.550 underside)", -10, 40), (-9650, 0, "DRY-02 P1 door, slides east 1,325", -2, -50),
+                                (-5350, 0, "DRY-03 P4 door, slides west 1,325", -10, -30), (-9000, 4400, "DRY-02r rack & pinion, north side only", -45, 6),
+                                (-9800, 3965, "DRY-02L 4 limit switches", 2, 16), (-5000, 4700, "DRY-14 drive N (one per strand)", 14, 8), (-5000, -4700, "DRY-14 drive S", -10, -16)]:
+        s.callout(T3, u, v, txt, dx, dy)
+    T4 = s.view("SECTION AT X = −9.000 THROUGH THE P1 DOOR DRIVE, LOOKING EAST", "west", (710, 180), 10, cut=(0, -9000, "+"),
+                bbox=((-9100, -8000), (2900, 4800), (-700, 950)), include=("dryer", "civil"), exclude=("load",), clip=(-4800, -3000, -650, 900), title_dy=14)
+    for (u, v, txt, dx, dy) in [(-3800, 180, "pinion m6 16T", -10, -24), (-3837, 247, "rack m6 under the door edge", -20, 30), (-4000, 375, "box girder 200 × 350", 10, 30),
+                                (-3400, 675, "fixed cover 250", 20, 12), (-3800, 300, "Ø140 V-groove wheel on the north rail", 25, -6), (-4400, 175, "BK50 1.1 kW gearmotor", -8, -30)]:
+        s.callout(T4, u, v, txt, dx, dy)
+    wx = G.dP[3] - 100
+    T5 = s.view("DETAIL — P4 CAT-WHISKER SWITCH ON ITS WALL CANTILEVER", "west", (1220, 180), 5, cut=(0, wx - 1, "+"),
+                bbox=((wx - 200, wx + 400), (3400, 4000), (-350, 300)), include=("dryer", "instr", "load"), exclude=(), clip=(-3950, -3350, -300, 260), title_dy=14)
+    s.callout(T5, -(G.dY - 85), -50, "Ø3 SS whisker, trips 100 before P4", 20, -30)
+    s.callout(T5, -(G.dY - 60), 130, "cantilever bracket from the wall", 20, 24)
+    s.callout(T5, -3650, -100, "jig-beam end", -24, -24)
+    rows = [["DRY-02L-1", "P1 door", "CLOSE stop", "X −10.525"], ["DRY-02L-2", "P1 door", "CLOSE slow-down", "X −10.325"],
+            ["DRY-02L-3", "P1 door", "OPEN slow-down", "X −9.440"], ["DRY-02L-4", "P1 door", "OPEN stop", "X −9.240"],
+            ["DRY-03L-1", "P4 door", "CLOSE stop", "X −4.475"], ["DRY-03L-2", "P4 door", "CLOSE slow-down", "X −4.675"],
+            ["DRY-03L-3", "P4 door", "OPEN slow-down", "X −5.560"], ["DRY-03L-4", "P4 door", "OPEN stop", "X −5.760"],
+            ["DRY-17", "Chain", "P4 arrival (cat whisker)", "X −5.350"]]
+    s.table(590, 290, 4, rows, (24, 18, 40, 22), h=5.0, size=1.9, head=["Tag", "On", "Function", "Position"])
+    s.notes(["Flue (D-26): outlet 700 × 300 in the south end wall at the SW corner, 50 above the hearth; lined duct 700 × 400 clear (100 module + 50 microporous, 6 mm shell);",
+             "expansion joint at the casing; horizontal 90° bend on a 700 centreline radius in the pit's bottom-left corner; run west through the pit wall into the junction sump.",
+             "No mitred corners. Expanded-metal guard 75 off the shell in the pit. TE-301 and PT-301 on the stub. Duct loss ≈9 Pa (C-07).",
+             "Dryer (D-28): both sliding doors park under the raised fixed cover over P2–P3. One rack and pinion per door, on the north side only; 4 limit switches per door in",
+             "ambient air on the north curb; rubber end buffers. Each chain strand has its own gearmotor on a split head shaft (VFD + encoder, electronic line shaft).",
+             "P4 arrival: cat-whisker switch on a cantilever bracket from the north wall top, in the path of the jig-beam end."], x=24, y=104, w=520)
     return s
 
 
@@ -300,7 +374,7 @@ def build(which=None):
     t = time.time()
     defs = [("SHV-FUR-6700-GA-001", ga001), ("SHV-FUR-6700-GA-002", ga002), ("SHV-FUR-6700-GA-003", ga003),
             ("SHV-FUR-6700-GA-004", ga004), ("SHV-FUR-6700-GA-005", ga005), ("SHV-FUR-6700-GA-006", ga006),
-            ("SHV-FUR-6700-GA-007", ga007)]
+            ("SHV-FUR-6700-GA-007", ga007), ("SHV-FUR-6700-GA-008", ga008)]
     sheets = []
     for name, fn in defs:
         if which and name[-3:] not in which:

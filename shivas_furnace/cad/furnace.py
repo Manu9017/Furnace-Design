@@ -38,15 +38,16 @@ def build_civil_furnace(R):
         walls = walls.union(box(-1700, -1500, y0, y1, g.bpit_slab, 0)).union(box(1500, 1700, y0, y1, g.bpit_slab, 0))
         ye = s * g.bpitY1
         walls = walls.union(box(-1700, 1700, min(ye, ye + s * t), max(ye, ye + s * t), g.bpit_slab, 0))
-    # flue duct sleeve through the west wall
-    walls = walls.cut(box(-1701, -1499, g.flueY - 520, g.flueY + 520, -830, -70))
+    # flue duct sleeve through the west wall of the south burner pit (D-26), 100 clear round the duct shell
+    walls = walls.cut(box(-1701, -1499, g.flue_run_y - 606, g.flue_run_y + 606, g.flue_zc - 456, g.flue_zc + 456))
     R.add("CIV-03 Furnace and burner pit walls", walls, "civil", "rccpit", tag="CIV-03", title="Furnace pit and burner pit walls",
-          spec="RCC 200, furnace pit 3,000 wide; burner pits 3,000 × 1,800 clear, floor −1.750", src="Rev K · HDG · D-08", status="D",
+          spec="RCC M25, 200 thick, T12 @ 200 both faces, 40 cover; furnace pit 3,000 wide; burner pits 3,000 × 1,800 clear, floor −1.750; "
+               "flue sleeve 1,212 × 912 through the south pit's west wall, packed with ceramic-fibre rope and sealed with a steel collar",
+          material="RCC M25, Fe 500D", src="Rev K · HDG · D-08 · D-26", status="D",
           note="119 mm ventilated gap between the casing and the pit walls; grating at FFL.")
     R.add("CIV-04 Burner pit floor slabs", slabs, "civil", "concrete2", tag="CIV-04", title="Burner pit floor slabs",
           spec="RCC 200, top −1.750, underside −1.950", src="Rev K · HDG", status="C")
     gr = merge(box(-1500, -g.cXo - 4, -4106, 4106, -40, 0), box(g.cXo + 4, 1500, -4106, 4106, -40, 0))
-    gr = gr.cut(box(-1501, -g.cXo - 3, g.flueY - 520, g.flueY + 520, -41, 1))
     R.add("CIV-05 Gap gratings", gr, "civil", "grating", tag="CIV-05", title="Ventilated-gap gratings at FFL",
           spec="Serrated grating 115 × 40, both long sides of the casing", src="D-08", status="D")
     # grillage ISMB 150 @ 600 (D-15)
@@ -68,31 +69,40 @@ def build_casing(R):
     outer = box(-g.cXo, g.cXo, -g.cYo, g.cYo, g.cbase, g.ctop)
     inner = box(-g.cXi, g.cXi, -g.cYi, g.cYi, g.cbase + g.cfp, g.ctop + 1)
     cas = outer.cut(inner)
-    # flue cut-out (west face) and burner holes (end faces)
-    cas = cas.cut(box(-g.cXo - 1, -g.cXi + 1, g.flueY - 500, g.flueY + 500, -750, -150))
+    # flue cut-out (south end face, SW corner, low: D-26) and burner holes (end faces)
+    cas = cas.cut(box(*g.flue_cut_X, -g.cYo - 1, -g.cYi + 1, *g.flue_cut_z))
     for x, s in ((-g.bX, 1), (g.bX, -1)):
         cas = cas.cut(cyl((x, s * (g.cYi - 1), g.bZ), (x, s * (g.cYo + 1), g.bZ), 125))
     for yc in (-2000, 2000):
         cas = cas.cut(box(-350, 350, yc - 350, yc + 350, g.cbase - 1, g.cbase + g.cfp + 1))
     R.add("CAS-01 Casing shell", cas, "casing", "steel", tag="CAS-01", title="Furnace casing shell",
-          spec="8,200 × 2,750 inside, 6 mm walls, 10 mm floor; base −1.575, top +0.150; flue cut-out 1,000 × 600; burner holes Ø250",
+          spec="8,200 × 2,750 inside, 6 mm walls, 10 mm floor; base −1.575, top +0.150; flue cut-out 1,000 × 600 in the south end wall at the SW corner (−1.415 → −0.815); burner holes Ø250; "
+               "all seams full-penetration butt or double fillet 6, gas-tight (kerosene test); blast Sa 2½, HR silicone aluminium 2 × 25 µm on the outside",
           material="IS 2062 E250 BR, continuously welded, gas-tight", src="Rev K · STL-EF · D-17", status="C")
     st = []
     zt = g.ctop
     y = -3600
     while y <= 3601:
-        if abs(y - g.flueY) > 600:
-            st.append(box(-g.cXo - 100, -g.cXo, y - 5, y + 5, g.cbase, zt))
+        st.append(box(-g.cXo - 100, -g.cXo, y - 5, y + 5, g.cbase, zt))
         st.append(box(g.cXo, g.cXo + 100, y - 5, y + 5, g.cbase, zt))
         y += 800
     for x in (-1100, 0, 1100):
         if abs(abs(x) - g.bX) > 400:
             for s in (1, -1):
+                if s < 0 and g.flue_cut_X[0] - 60 < x < g.flue_cut_X[1] + 60:
+                    continue
                 st.append(box(x - 5, x + 5, s * g.cYo, s * (g.cYo + 100), g.cbase, zt))
     zb = g.cbase + 0.55 * (g.ctop - g.cbase)
     belts = [box(g.cXo, g.cXo + 50, -g.cYo, g.cYo, zb - 5, zb + 5),
-             box(-g.cXo - 50, -g.cXo, -g.cYo, g.flueY - 520, zb - 5, zb + 5),
-             box(-g.cXo - 50, -g.cXo, g.flueY + 520, g.cYo, zb - 5, zb + 5)]
+             box(-g.cXo - 50, -g.cXo, -g.cYo, g.cYo, zb - 5, zb + 5)]
+    fx0, fx1 = g.flue_cut_X
+    fz0, fz1 = g.flue_cut_z
+    pf = box(fx0 - 100, fx1 + 100, -g.cYo - 12, -g.cYo, fz0 - 100, fz1 + 100).cut(box(fx0, fx1, -g.cYo - 13, -g.cYo + 1, fz0, fz1))
+    studs = [cyl((x, -g.cYo - 12, z), (x, -g.cYo - 52, z), 8) for x in (fx0 - 50, (fx0 + fx1) / 2 - 250, (fx0 + fx1) / 2 + 250, fx1 + 50) for z in (fz0 - 50, fz1 + 50)]
+    studs += [cyl((x, -g.cYo - 12, z), (x, -g.cYo - 52, z), 8) for x in (fx0 - 50, fx1 + 50) for z in ((fz0 + fz1) / 2,)]
+    R.add("CAS-03 Flue port frame", merge(pf, compound(*studs)), "casing", "steel", tag="CAS-03", title="Flue port frame on the south end wall",
+          spec="Flat 100 × 12 picture frame round the 1,000 × 600 cut-out, 10 × M16 studs for the duct flange; ceramic-fibre rope gasket Ø25",
+          material="IS 2062 E250; studs SS 304 M16", src="D-26", status="D")
     R.add("CAS-02 Stiffeners and belts", compound(*st, *belts), "casing", "steel2", tag="CAS-02", title="Casing stiffeners and belts",
           spec="Vertical MS flat 100 × 10 @ 800 c/c; horizontal belt MS flat 50 × 10 at 0.55 H", material="IS 2062 E250",
           src="STL-EF · HDG", status="C")
@@ -109,22 +119,110 @@ def build_casing(R):
           spec="6 mm chequered, bolted panels ≈1,000 long, +0.250 → +0.256; rim stands 44 mm proud", src="STL-EF · D-03", status="D")
 
 
+def _openings():
+    g = G
+    ops = [box(x - 200, x + 200, min(s * (g.lfY - 1), s * (g.cYi + 1)), max(s * (g.lfY - 1), s * (g.cYi + 1)), g.bZ - 200, g.bZ + 200)
+           for x, s in ((-g.bX, 1), (g.bX, -1))]
+    ops.append(box(*g.flue_cut_X, -g.cYi - 1, -g.lfY + 1, *g.flue_cut_z))
+    return ops
+
+
+def _bb_overlap(a, b):
+    try:
+        A, Bb = a.val().BoundingBox(), b.val().BoundingBox()
+    except Exception:
+        return False
+    return A.xmin < Bb.xmax and Bb.xmin < A.xmax and A.ymin < Bb.ymax and Bb.ymin < A.ymax and A.zmin < Bb.zmax and Bb.zmin < A.zmax
+
+
+def _modules(R):
+    """Hot-face folded modules as individual units in parquet, each on its own SS 310 anchor stud (D-05)."""
+    g = G
+    z0, zl, z1 = g.f_plate_top, g.lip_top, g.ctop
+    rows, gap = 5, 4
+    zr = [z0 + i * (zl - z0) / rows for i in range(rows + 1)]
+    ops = _openings()
+    mods, studs, washers = [], [], []
+    def place(m, centre, axis_pt0, axis_pt1, top_course):
+        for o in ops:
+            if _bb_overlap(m, o):
+                m = m.cut(o)
+                if not m.solids().vals() or sum(v.Volume() for v in m.solids().vals()) < 1e5:
+                    return
+                ob = o.val().BoundingBox()
+                if centre is not None and ob.zmin - 60 < centre[2] < ob.zmax + 60 and ob.xmin - 60 < centre[0] < ob.xmax + 60 and ob.ymin - 60 < centre[1] < ob.ymax + 60:
+                    centre = None
+        if sum(v.Volume() for v in m.solids().vals()) < 1e5:
+            return
+        mods.append(m)
+        if centre is not None and not top_course:
+            studs.append(cyl(axis_pt0, axis_pt1, 5))
+    # long walls: modules X cXi-75 .. lfX, Y full length (corners belong to the long walls)
+    yl = g.cYi - 75
+    n = round(2 * yl / 305)
+    for sx in (-1, 1):
+        xa, xb, xr = sx * (g.cXi - 75), sx * g.lfX, sx * g.lrX
+        for j in range(n):
+            y0 = -yl + j * 2 * yl / n
+            y1 = y0 + 2 * yl / n
+            yc = (y0 + y1) / 2
+            for i in range(rows):
+                zc = (zr[i] + zr[i + 1]) / 2
+                m = box(xa, xb, y0 + gap / 2, y1 - gap / 2, zr[i] + gap / 2, zr[i + 1] - gap / 2)
+                place(m, (sx * 1200, yc, zc), (sx * g.cXi, yc, zc), (sx * (g.cXi - 165), yc, zc), False)
+                washers.append(cyl((sx * (g.cXi - 75), yc, zc), (sx * (g.cXi - 79), yc, zc), 22))
+            place(box(xa, xr, y0 + gap / 2, y1 - gap / 2, zl + gap / 2, z1), None, None, None, True)
+    # end walls: modules Y cYi-75 .. lfY, X between the long-wall modules
+    xl = g.lfX
+    m_e = round(2 * xl / 305)
+    for sy in (-1, 1):
+        ya, yb, yr = sy * (g.cYi - 75), sy * g.lfY, sy * g.lrY
+        for j in range(m_e):
+            x0 = -xl + j * 2 * xl / m_e
+            x1 = x0 + 2 * xl / m_e
+            xc = (x0 + x1) / 2
+            for i in range(rows):
+                zc = (zr[i] + zr[i + 1]) / 2
+                m = box(x0 + gap / 2, x1 - gap / 2, ya, yb, zr[i] + gap / 2, zr[i + 1] - gap / 2)
+                inside = any(o.val().BoundingBox().xmin - 60 < xc < o.val().BoundingBox().xmax + 60 and o.val().BoundingBox().zmin - 60 < zc < o.val().BoundingBox().zmax + 60
+                             and (o.val().BoundingBox().ymin < sy * 3950 < o.val().BoundingBox().ymax) for o in ops)
+                place(m, None if inside else (xc, sy * 3950, zc), (xc, sy * g.cYi, zc), (xc, sy * (g.cYi - 165), zc), False)
+                if not inside:
+                    washers.append(cyl((xc, sy * (g.cYi - 75), zc), (xc, sy * (g.cYi - 79), zc), 22))
+            place(box(x0 + gap / 2, x1 - gap / 2, ya, yr, zl + gap / 2, z1), None, None, None, True)
+    xo, yo, xi, yi = g.cXi - 75, g.cYi - 75, g.cXi - 250, g.cYi - 250
+    prox = frame(-xo, xo, -yo, yo, -xi, xi, -yi, yi, z0, z1).cut(frame(-g.lrX, g.lrX, -g.lrY, g.lrY, -g.lfX - 1, g.lfX + 1, -g.lfY - 1, g.lfY + 1, g.lip_top, z1 + 1))
+    for o in ops:
+        prox = prox.cut(o)
+    R.add("LIN-01 Folded module hot face 175", compound(*mods), "lining", "module", tag="LIN-01", title="Folded-module hot face, 175 mm (parquet)", proxy=prox,
+          spec=f"{len(mods)} folded ceramic-fibre modules 1430 grade, 128 kg/m³ as installed, 175 deep, ≈305 × 325 faces in {rows} courses on −1.565 → +0.060, "
+               "laid in parquet (fold direction alternating), 25 mm pre-compression released after the banding is cut; rebated 50 above +0.060 for the HD-board seat; "
+               "cut round the burner blocks and the flue port and packed with 50 mm blanket strips",
+          material="Alumina-zirconia-silica fibre 1430 °C, 128 kg/m³", src="D-05 (Rev K 128 kg/m³ hot face; SH-INS 250 mm)", status="D", qty=str(len(mods)))
+    R.add("LIN-07 Module anchor studs", merge(compound(*studs), compound(*washers)), "lining", "ss", tag="LIN-07", title="SS 310 module anchor studs",
+          spec=f"{len(studs)} studs M10 × 165 SS 310, stud-welded (drawn arc) to the casing at each module centre; through the CaSi and microporous "
+               "(Ø40 × 3 SS 310 speed washers clamp the backup at 75) into the module's internal anchor channel; 10 % bend-tested after welding",
+          material="SS 310 (UNS S31000)", src="D-05 · module maker's anchoring", status="D", qty=str(len(studs)), layer="detail")
+
+
 def build_lining(R):
     g = G
     z0, z1 = g.f_plate_top, g.ctop
-    layers = [("LIN-03", "Calcium silicate backing 25", "casi", 0, 25, "Calcium silicate board 245 kg/m³, 25 mm"),
-              ("LIN-02", "Microporous 50", "mpi", 25, 75, "Microporous board 320 kg/m³, 2 × 25 mm"),
-              ("LIN-01", "Folded module hot face 175", "module", 75, 250, "Folded ceramic-fibre module 128 kg/m³, 1430 grade, 175 mm, Z-anchored SS310")]
+    layers = [("LIN-03", "Calcium silicate backing 25", "casi", 0, 25, "Calcium silicate board 245 kg/m³, 25 mm, 1,000 °C grade, joints butted tight, "
+               "impaled on the anchor studs and held by the microporous; Class F 1,000 °C"),
+              ("LIN-02", "Microporous 50", "mpi", 25, 75, "Microporous board 320 kg/m³, 2 × 25 mm, joints staggered 150; film-wrapped panels, "
+               "slit at each stud, service limit 950 °C (C-04 shows ≤ 830 °C at 1,100 °C hot face)")]
     for tag, title, col, a, b, spec in layers:
         xo, yo, xi, yi = g.cXi - a, g.cYi - a, g.cXi - b, g.cYi - b
         w = frame(-xo, xo, -yo, yo, -xi, xi, -yi, yi, z0, z1)
         if tag == "LIN-01":   # 50 mm rebate above the HD-board seat (SH-INS)
             w = w.cut(frame(-g.lrX, g.lrX, -g.lrY, g.lrY, -g.lfX - 1, g.lfX + 1, -g.lfY - 1, g.lfY + 1, g.lip_top, z1 + 1))
-        w = w.cut(box(-g.cXi - 1, -g.lfX + 1, g.flueY - 500, g.flueY + 500, -750, -150))
+        w = w.cut(box(*g.flue_cut_X, -g.cYi - 1, -g.lfY + 1, *g.flue_cut_z))
         for x, s in ((-g.bX, 1), (g.bX, -1)):
             w = w.cut(box(x - 200, x + 200, s * g.lfY - s * 1, s * g.cYi + s * 1, g.bZ - 200, g.bZ + 200))
         R.add(f"{tag} {title}", w, "lining", col, tag=tag, title=title, spec=spec + "; walls −1.565 → +0.150",
               src="D-05 (Rev K 128 kg/m³ hot face; SH-INS 250 mm)", status="D")
+    _modules(R)
     # burner blocks and flue port block
     bb = []
     for x, s in ((-g.bX, 1), (g.bX, -1)):
@@ -132,9 +230,11 @@ def build_lining(R):
         bb.append(blk.cut(cyl((x, s * (g.lfY - 5), g.bZ), (x, s * (g.cYi + 5), g.bZ), 100)))
     R.add("LIN-05 Burner blocks", compound(*bb), "burner", "castable", tag="LIN-05", title="Burner blocks (quarls)",
           spec="Dense castable 1600 °C, 400 × 400 × 250 with Ø200 port", src="D-05", status="D", qty="2")
-    fp = box(-g.cXi, -g.lfX, g.flueY - 500, g.flueY + 500, -750, -150).cut(box(-g.cXi - 1, -g.lfX + 1, g.flueY - 350, g.flueY + 350, -600, -300))
-    R.add("LIN-06 Flue port block", fp, "flue", "castable", tag="LIN-06", title="Flue port block",
-          spec="Dense castable frame 1,000 × 600 × 250, passage 700 × 300 = 0.21 m²", src="Rev H", status="C")
+    fp = box(*g.flue_cut_X, -g.cYi, -g.lfY, *g.flue_cut_z).cut(box(*g.flue_pass_X, -g.cYi - 1, -g.lfY + 1, *g.flue_pass_z))
+    R.add("LIN-06 Flue port block", fp, "flue", "castable", tag="LIN-06", title="Flue port block (south end wall, SW corner)",
+          spec="Dense low-cement castable 1,000 × 600 × 250, passage 700 × 300 = 0.21 m² at −1.265 → −0.965 (50 above the hearth); "
+               "SS 310 V-anchors Ø6 at 150 c/c welded to the port frame; cast in place against the module edges with 6 mm fibre-paper expansion joints",
+          material="LC castable 1,600 °C, 2,450 kg/m³; anchors SS 310", src="Rev H (passage) · D-26 (position)", status="D")
     # hearth (inside the lining): CaSi 50, microporous 25, blanket 3 x 50 A-B-A strips, HD board tiles
     hx, hy = g.lfX, g.lfY
     lpcut = lambda w, za, zb: w.cut(box(-350, 350, -2350, -1650, za - 1, zb + 1)).cut(box(-350, 350, 1650, 2350, za - 1, zb + 1))
@@ -224,6 +324,24 @@ def build_topclose(R):
     hdb = _rib_cut(annulus(g.lip_top, g.hdb_top), g.lip_top, g.hdb_top)
     R.add("TOP-02 HD boards", hdb, "topclose", "hdb", tag="TOP-02", title="HD boards, top closure",
           spec="500 × 1,000 × 25, cut to 488 between ribs; bear 50 on the lip and 50 on the lining rebate", src="SH-INS-01 Rev B", status="C")
+    studs = []
+    def stud(x, y, z_bot, z_top, rr=4):
+        studs.extend([cyl((x, y, z_bot), (x, y, z_top), rr), cyl((x, y, g.hdb_top), (x, y, g.hdb_top + 3), 15),
+                      cyl((x, y, g.hdb_top + 3), (x, y, g.hdb_top + 11), 7)])
+    for yy in range(-3250, 3251, 500):
+        for sx in (-1, 1):
+            stud(sx * (W / 2 + 25), yy, g.lip_top - g.lipt, g.hdb_top + 14)            # welded to the lip plate
+            stud(sx * (g.lrX - 25), yy, g.hdb_top - 125, g.hdb_top + 14, 3)              # pinned into the rebated module
+    for xx in (-250, 250):
+        for sy in (-1, 1):
+            stud(xx, sy * (L / 2 + 25), g.lip_top - g.lipt, g.hdb_top + 14)
+    for xx in (-750, -250, 250, 750):
+        for sy in (-1, 1):
+            stud(xx, sy * (g.lrY - 25), g.hdb_top - 125, g.hdb_top + 14, 3)
+    R.add("TOP-02a HD-board studs and washers", compound(*studs), "topclose", "ss", tag="TOP-02a", title="SS studs holding the top-closure HD boards",
+          spec="Kettle side: M8 × 50 SS 310 studs stud-welded to the lip plate between the ribs @ 500, through Ø12 holes in the board, SS 310 Ø30 × 3 washer + nyloc-free "
+               "full nut; lining side: Ø6 × 140 SS 310 pins through the board into the rebated module, washer and spring clip; boards free to slide 3 mm",
+          material="SS 310", src="SH-INS-01 Rev B (board) · this design (fixing)", status="D", qty=str(len(studs) // 3), layer="detail")
     ringzone = rrect(L + 2 * 121, W + 2 * 121, r + 121, g.ring_top - 101, g.ring_top + 1)
     for i, col in enumerate(("T1", "T2", "T3")):
         za, zb = g.hdb_top + 50 * i, g.hdb_top + 50 * (i + 1)
@@ -249,6 +367,17 @@ def build_topclose(R):
         R.add(f"TOP-07 Corner shield {key}", plate, "topclose", "ss", tag="TOP-07", title=f"Curved SS corner shield, {name}",
               spec="750 high × 1,500 developed (725 + R350 quarter + 225); 50 mm off the kettle; −0.695 → +0.055",
               material="SS 310S 6 mm (assumed, O-10)", src="SH-INS-03 Rev B (19 Nov) · D-06", status="C")
+        cl = []
+        pts = [(sx * (W / 2 + 33), cy - sy * 362), (cx + sx * 256, cy + sy * 256), (cx - sx * 112, sy * (L / 2 + 33))]
+        for (px, py) in pts:
+            cl += [box(px - 30, px + 30, py - 30, py + 30, zs1 - 60, g.lip_top - g.lipt), cyl((px, py, zs1 - 45), (px + sx * 40, py, zs1 - 45), 5)]
+        for k in range(5):
+            yy = cy - sy * (100 + 150 * k)
+            cl.append(cyl((sx * (W / 2 + 56), yy, zs0 + 200), (sx * (W / 2 + 64), yy, zs0 + 200), 9))
+            cl.append(cyl((sx * (W / 2 + 56), yy, zs1 - 200), (sx * (W / 2 + 64), yy, zs1 - 200), 9))
+        R.add(f"TOP-09 Shield cleats {key}", compound(*cl), "topclose", "ss", tag="TOP-09", title=f"Shield hanger cleats and fixings, {name}",
+              spec="3 SS 310 cleats 60 × 60 × 6 hang the shield from the lip plate with M10 SS 310 bolts in 12 × 30 slots (the shield grows ≈8 mm); "
+                   "10 SS 310 M10 button-head studs through the plate into the backing fibre, Ø30 washers", material="SS 310", src="SH-INS-03 Rev B · this design (fixing)", status="D", layer="detail")
         R.add(f"TOP-08 Shield fibre {key}", fibre, "topclose", "shf", tag="TOP-08", title=f"Shield backing fibre, {name}",
               spec="2 × 25 mm blanket 4,200 × 610, one roll per shield, no joints; −0.570 → +0.040", src="SH-INS-03 Rev B", status="C")
 
@@ -276,20 +405,17 @@ def build_burners(R):
 def build_instruments(R):
     g = G
     tcs = []
+    x = g.kWi / 2 - 70
     for yc, hot in zip(B.v("kettle.tc_positions_Y"), (600, 800, 1100)):
-        x = g.kWi / 2 - 70
-        tcs.append(cyl((x, yc, g.zinc - hot), (x, yc, g.rim + 250), 16))
-        tcs.append(box(x - 60, x + 60, yc - 60, yc + 60, g.rim + 250, g.rim + 370))
-        tcs.append(box(x - 10, x + 300, yc - 15, yc + 15, g.rim + 10, g.rim + 30))      # clamp arm to the flange
-        coil = None
-        for k in range(10):
-            a0, a1 = k * math.pi / 5, (k + 1) * math.pi / 5
-            p0 = (x + 150 + 150 * math.cos(a0), yc + 150 * math.sin(a0), g.rim + 450 + 6 * k)
-            p1 = (x + 150 + 150 * math.cos(a1), yc + 150 * math.sin(a1), g.rim + 450 + 6 * (k + 1))
-            coil = merge(coil, cyl(p0, p1, 5))
-        tcs.append(coil)
+        tcs.append(cyl((x, yc, g.zinc - hot), (x, yc, g.rim + 10), 16))
+        tcs.append(box(x - 55, x + 55, yc - 55, yc + 55, g.rim + 10, g.rim + 120))       # low head: stays under the kettle cover (D-27)
+        tcs.append(box(x - 10, x + 300, yc - 15, yc + 15, g.rim + 10, g.rim + 30))       # clamp arm to the flange
+        tcs.append(pipe([(x + 55, yc, g.rim + 60), (1080, yc, g.rim + 60), (1080, yc, g.deck + 20)], 10))
+    tcs.append(pipe([(1080, -2400, g.deck + 20), (1080, 2400, g.deck + 20)], 12))
+    tcs.append(box(1030, 1230, -150, 150, g.deck, g.deck + 160))
     R.add("INS-01 Bath thermocouples", compound(*tcs), "instr", "galv", tag="INS-01", title="Bath thermocouples (3)",
-          spec="Duplex Type K in Ti Gr.2 tubes, hot parts 600 / 800 / 1,100 mm, Ø300 expansion coil; east inner edge at Y −2,400 / 0 / +2,400",
+          spec="Duplex Type K in Ti Gr.2 protection tubes Ø32, hot parts 600 / 800 / 1,100 mm, east inner edge at Y −2,400 / 0 / +2,400; low-profile heads at +0.310 → +0.420 "
+               "so the kettle cover (+0.450) passes over them; compensating cable in SS flexible conduit to an IP65 junction box on the east deck",
           src="Rev K thermocouple schedule", status="C", qty="3")
     ftc = []
     for s, yc in ((-1, 2000), (1, -2000)):

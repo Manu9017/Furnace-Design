@@ -150,12 +150,20 @@ class Geo:
         g.pitX = 1500                                                # inner half-width of furnace + burner pits
         g.pitw = 200
         g.bpitY0, g.bpitY1 = g.cYo, g.cYo + 1800                     # 4106 .. 5906
-        # flue (D-10)
-        g.flueY = -2500
-        g.flue_cut = (1000, 600)                                     # Y x Z
-        g.flue_cut_z = (-750, -150)
-        g.flue_pass = (700, 300)
-        g.flue_pass_z = (-600, -300)
+        # flue (D-26): outlet on the SOUTH end wall at the SW corner, just above the hearth; lined duct (D-10 build-up)
+        # leaves through a stub with the expansion joint, turns west on an R700 bend in the bottom-left corner of the
+        # south burner pit, and runs through the pit's west wall into the junction. No mitred corners.
+        g.flue_pass_X = (-1125, -425)                                # 700 wide; west edge on the west lining face
+        g.flue_pass_z = (-1265, -965)                                # 300 high, 50 above the hearth (-1.315)
+        g.flue_cut_X = (-1275, -275)                                 # casing cut-out and castable port block 1,000 x 600
+        g.flue_cut_z = (-1415, -815)
+        g.flue_xc, g.flue_zc = -775, -1115                           # duct centreline; duct clear 700 x 400
+        g.flue_y_ej = -(g.cYo + 32), -(g.cYo + 232)                  # expansion joint between flange frames (port frame is 12 thick)
+        g.flue_ys = -(g.cYo + 282)                                   # start of the bend
+        g.flue_R = 700                                               # bend centreline radius (R/W = 1.0)
+        g.flue_bend_c = (g.flue_xc - g.flue_R, g.flue_ys)            # (-1475, -4376)
+        g.flue_run_y = g.flue_ys - g.flue_R                          # -5076
+        g.flue_end_x = -2150                                         # junction inner face
         # dryer (D-11): clear 6000 x 7500 x 1400, centre X -7500
         g.dX0, g.dX1, g.dY = -10500, -4500, 3750
         g.d_floor = -1400
@@ -165,12 +173,13 @@ class Geo:
         # trenches (clear, Z -1000..0) as (x0, x1, y0, y1)
         g.trenches = {
             "HRL-02a": (-4150, -2200, -450, 450),      # return, from dryer east wall (RCC outer face -4150)
-            "HRL-02b": (-3100, -2200, -2000, -450),    # return, down to the junction
-            "HRL-03":  (-3150, -2150, -3000, -2000),   # three-way junction
-            "HRL-04":  (-3150, -2150, -6950, -3000),   # suction to the mixing box
+            "HRL-02b": (-3100, -2200, -4476, -450),    # return, down to the junction
+            "HRL-03":  (-3150, -2150, -5676, -4476),   # three-way junction on the flue run (D-26), sump floor -1.350
+            "HRL-04":  (-3150, -2150, -6950, -5676),   # suction to the mixing box
             "HRL-08": (-11950, -10850, -8650, 500),    # discharge: from the blower at the SW corner north to the supply box (D-22)
         }
-        g.flue_trench = (-2150, -g.pitX - g.pitw, g.flueY - 630, g.flueY + 630)   # 1260 wide envelope
+        g.flue_trench = (-2150, -g.pitX - g.pitw, g.flue_run_y - 630, g.flue_run_y + 630)   # short link: junction -> south pit wall
+        g.trench_floor_k = {"MBPIT": -1100, "HRL-03": -1350, "FLUE": -1650}
         # mixing box S2
         g.mb = (-3400, -1900, -8250, -6950, -1100, 1600)
         # recirculation blower

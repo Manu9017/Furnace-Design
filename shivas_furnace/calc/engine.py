@@ -313,6 +313,7 @@ def c04_linings():
     res["flue RevH buried"] = wall_1d(800, [("ifb", 230), ("blanket96", 50), ("concrete", 200), ("soil", 1000)], outside="sink", sink=30)
     duct = duct_in_trench(800, [("module128", 100), ("microporous", 50), ("steel", 6)])
     res["flue duct D-10"] = {"q": duct["q_skin"], "T": duct["T"]}
+    res["flue duct in pit"] = wall_1d(800, [("module128", 100), ("microporous", 50), ("steel", 6)], outside="free", T_amb=40)
     res["cover RevH"] = wall_1d(800, [("ifb", 75), ("blanket96", 50), ("steel", 6)], outside="free", eps=0.6)
     for t in (50, 100):
         res[f"dryer {t}"] = wall_1d(120, [("fibreboard", t), ("concrete", 250), ("soil", 1000)], outside="sink", sink=30)
@@ -329,7 +330,9 @@ def c04_linings():
         check("Pad top under the ventilated channels", Tp, "degC", 65, "max", "ACI 349 App. E sustained 65 °C"),
         check("Rev H flue trench RCC face, ideal sink", res["flue RevH best"]["T"][2], "degC", 70, "max", "Rev H target 60–70 °C", ref=True),
         check("Rev H flue trench RCC face, buried", res["flue RevH buried"]["T"][2], "degC", 70, "max", ref=True),
-        check("D-10 lined flue duct skin", duct["T_skin"], "degC", None, "info", "inside the vented trench, not accessible"),
+        check("D-10 lined flue duct skin", duct["T_skin"], "degC", None, "info", "in the vented link trench, not accessible"),
+        check("Flue duct skin in the south burner pit (D-26)", sk("flue duct in pit"), "degC", None, "info", "pit air 40 °C; above the 60 °C touch limit, so guarded (FLU-05)"),
+        check("Flue duct heat loss in the pit", res["flue duct in pit"]["q"], "W/m2", None, "info", "≈3.4 m² of shell in the pit"),
         check("D-10 trench RCC face", duct["T_rcc"], "degC", 65, "max", "trench air 45 °C"),
         check("Rev H cover plate (75 tile + 50 fibre)", sk("cover RevH"), "degC", 60, "max", "walk-on limit", ref=True),
         check("Dryer pit RCC behind 50 mm board", res["dryer 50"]["T"][1], "degC", 65, "max", ref=True),
@@ -449,11 +452,23 @@ def c07_flue(c01):
         Q = Nm3h / 3600 * (Tf + 273.15) / 273.15
         rows.append((name, Nm3h, Q, Q / 0.21, Q / 0.28, Q / 0.70))
     d = rows[1]
+    # D-26 route: stub with expansion joint, R700 horizontal bend (R/W 1.0), run to the junction; exit loss into the junction
+    g = G
+    L = (g.cYo + 270 - g.cYo) / 1000 + math.pi / 2 * g.flue_R / 1000 + (g.flue_bend_c[0] - g.flue_end_x) / 1000
+    Qd = d[2]
+    dd = duct_dp(Qd, Tf, 0.7, 0.4, L=L, K=0.5 + 0.25 + 1.0, rough=0.5e-3)
+    rows.append(("D-26 duct: port entry 0.5 + R700 bend 0.25 + exit 1.0", case["flue_Nm3h"], Qd, dd["v"], dd["dp"], L))
     checks = [check("Passage 700 × 300 velocity (design λ)", d[3], "m/s", None, "info", "Rev H 6.7 m/s"),
+              check("Flue duct length, port → junction (D-26)", L, "m", None, "info", "south end wall, R700 bend, through the pit wall"),
+              check("Flue duct pressure loss incl. R700 bend", dd["dp"], "Pa", 10.0, "max", "the loop suction pulls the furnace; keep it small"),
               check("D-10 duct 700 × 400 velocity", d[4], "m/s", 3.0, "min", "keeps the duct self-cleaning"),
               check("Rev H trench 700 × 1000 velocity", d[5], "m/s", 3.0, "min", "too slow: ash settles", ref=True)]
-    return {"id": "C-07", "title": "Flue passage and lined flue duct", "method": ["Q = Nm³/h × (T+273)/273 / 3600."],
-            "results": {"rows": rows}, "checks": checks, "notes": []}
+    return {"id": "C-07", "title": "Flue passage and lined flue duct", "method": ["Q = Nm³/h × (T+273)/273 / 3600.",
+            "Duct loss: Colebrook friction on the hydraulic diameter + K (sharp-edged port entry 0.5, rectangular 90° bend at R/W 1.0 ≈ 0.25, exit into the junction 1.0)."],
+            "results": {"rows": [r[:6] for r in rows[:2]]}, "checks": checks,
+            "notes": ["D-26 moves the outlet to the south end wall at the SW corner, 50 mm above the hearth, so the combustion gas sweeps the full "
+                      "kettle wall height before it leaves. The duct turns west on a radiused bend (no mitred corner): at R/W 1.0 the bend costs "
+                      "K ≈ 0.25 instead of ≈1.2 for a mitre."]}
 
 
 # =========================================================================== C-08 loop energy balance
@@ -514,9 +529,12 @@ def c09_loop_dp():
     rows = []
     def add(name, d):
         rows.append((name, d["v"], d["dp"] / MMWC))
-    add("Return trench 900 × 1000, 5.5 m, 2 radiused bends", duct_dp(Qr, Tret, 0.9, 1.0, L=5.5, K=2 * 0.35, rough=1.5e-3))
-    add("Junction (radiused merge)", duct_dp(Qs, Tsuc, 1.0, 1.0, K=0.4))
-    add("Suction trench 1000 × 1000, 4 m", duct_dp(Qs, Tsuc, 1.0, 1.0, L=4.0, rough=1.5e-3))
+    tr = G.trenches
+    L_ret = (tr["HRL-02a"][1] - tr["HRL-02a"][0] + tr["HRL-02b"][3] - tr["HRL-02b"][2]) / 1000
+    L_suc_tr = (tr["HRL-04"][3] - tr["HRL-04"][2]) / 1000
+    add(f"Return trench 900 × 1000, {L_ret:.1f} m, 2 radiused bends", duct_dp(Qr, Tret, 0.9, 1.0, L=L_ret, K=2 * 0.35, rough=1.5e-3))
+    add("Junction sump with 60° benching (D-26)", duct_dp(Qs, Tsuc, 1.0, 1.0, K=0.6))
+    add(f"Suction trench 1000 × 1000, {L_suc_tr:.1f} m", duct_dp(Qs, Tsuc, 1.0, 1.0, L=L_suc_tr, rough=1.5e-3))
     rows.append(("Mixing box S2 with R700 deflector (SH-MB-01)", None, B.v("loop.mixing_box_loss")))
     g = G
     L_suc = (g.suction[0] - g.suction[1]) / 1000
@@ -720,13 +738,20 @@ def c15_enclosure():
     A_slot = slot * L
     door_len = 7.97
     deck = g.deck / 1000
-    z_skim = (200 + B.v("enclosure.skim_stop")) / 1000 - deck          # door bottom above the deck at the skimming stop
+    skim = B.v("enclosure.skim_stop") / 1000
+    XI, ZP = B.v("enclosure.west_pivot")
+    zg = B.v("enclosure.door_head_z") / 1000
+    z_skim = (200 / 1000 + skim) - deck                                  # east door bottom above the deck at the skimming stop
     z_full = (200 + B.v("enclosure.door_lift")) / 1000 - deck
     A_skim, A_full = door_len * z_skim, door_len * z_full
+    A_skim_w = 7.85 * skim                                               # west door lifted on its carriages: opening sill (+0.450) → door bottom
+    A_cover = 7.85 * (zg - ZP / 1000)                                    # west side open while the west door lies on the kettle
     v_closed = Q / A_slot
     v_skim1 = Q / (A_slot + A_skim)
-    v_skim2 = Q / (A_slot + 2 * A_skim)
+    v_skim_w = Q / (A_slot + A_skim_w)
+    v_skim2 = Q / (A_slot + A_skim + A_skim_w)
     v_full = Q / (A_slot + A_full)
+    v_cover = Q / (A_slot + A_cover)
     v_roof = Q / (L * W)
     q_side = Q / 2
     a_slot_side = 8 * 0.70 * 0.030
@@ -744,28 +769,73 @@ def c15_enclosure():
     d_o = duct_dp(Q, T, 0, d=0.7, L=6.0, K=0.5 + 2 * 0.25)
     rows.append(("Ø700 outlet, 6 m, entry + 2 bends to the flange", d_o["v"], d_o["dp"] / MMWC))
     total = sum(r[2] for r in rows)
+    # ---- kettle cover (D-27): idle-bath loss open vs covered
+    Tz = 450.0
+    eps_z = B.v("enclosure.zinc_emissivity")
+    Ts_k, Tenc = Tz + 273.15, 60 + 273.15
+    q_rad_open = eps_z * SIGMA * (Ts_k ** 4 - Tenc ** 4)
+    q_conv_open = 1.52 * (Tz - 60) ** (1 / 3) * (Tz - 60)                 # hot horizontal surface facing up, turbulent
+    q_open = q_rad_open + q_conv_open
+    eps_c = 0.4                                                          # SS 304 hot skin, oxidised
+    Tc = 350.0
+    for _ in range(200):
+        q_gap = SIGMA * ((Ts_k) ** 4 - (Tc + 273.15) ** 4) / (1 / eps_z + 1 / eps_c - 1) + 3.0 * (Tz - Tc)
+        w = wall_1d(Tc, [("module128", 75), ("microporous", 25), ("steel", 2)], outside="free", T_amb=50)
+        Tcn = Tc + 0.2 * (q_gap - w["q"]) / 10
+        if abs(Tcn - Tc) < 0.01:
+            break
+        Tc = Tcn
+    q_cov = w["q"]
+    cover_top = w["T"][-2]
+    A_cov_eff = A_bath * 1.25                                            # bath + rim/flange zone under the cover
+    P_open, P_cov = q_open * A_bath / 1000, q_cov * A_cov_eff / 1000
+    saving = P_open - P_cov
+    idle = B.v("enclosure.idle_hours")
+    AH = 0.60
+    gas_day = saving * idle / (B.v("process.gas_lhv") * AH)
+    # ---- west door mass, slew-drive torque and hoist load
+    A_door = 7.85 * 2.45
+    m_door = A_door * (3 * 7.93 + 2 * 7.85 + 75 * 0.128 + 25 * 0.32) + 36 * 9.0 + 80     # skins + blanket, RHS frame ≈36 m at 9 kg/m, hardware
+    T_end = m_door * 9.81 * 2.45 / 2 / 2 / 1000                          # kN·m per slew drive at horizontal
+    hoist_load = (m_door + 2 * 180) / 2 / 1000                           # t per hoist (door + carriages)
+    rows.append(("Idle bath, open: radiation + convection", None, q_open / 1000))
+    rows.append(("Idle bath under the kettle cover", None, q_cov / 1000))
     checks = [
         check("Capture flow vs requirement", Q * 3600, "m3/h", q_req, "min", "max of 2 volume changes/min and 2,000 m3/h per m2 of bath"),
         check("Volume changes", Q * 60 / V, "per min", None, "info", f"enclosure {V:.1f} m3 to the sheeting (annexure {V_ann:.1f})"),
         check("Rope-slot inflow, doors and roof closed", v_closed, "m/s", 1.0, "min", "slot 200 × 8,212; seal leakage ignored (lowers it)"),
-        check("Open-face velocity, one door at the skimming stop", v_skim1, "m/s", 0.5, "min", "ACGIH enclosing hood, hot process; D-25"),
+        check("Open-face velocity, east door at the skimming stop", v_skim1, "m/s", 0.5, "min", "ACGIH enclosing hood, hot process; D-25"),
+        check("Open-face velocity, west door lifted to skim", v_skim_w, "m/s", 0.5, "min", "D-27: opening +0.450 → +1.450"),
         check("Open-face velocity, both doors at the skimming stop", v_skim2, "m/s", 0.5, "min", "prevented by the one-door-at-a-time interlock (D-25)", ref=True),
-        check("Open-face velocity, one door at full lift", v_full, "m/s", None, "info", "maintenance only, burners at low fire (D-25)"),
+        check("Open-face velocity, east door at full lift", v_full, "m/s", None, "info", "maintenance only, burners at low fire (D-25)"),
+        check("West side open with the kettle cover down", v_cover, "m/s", None, "info", "bath covered, no dipping; ZFE damper to 50 % (D-27)"),
         check("Roof fully open (jig going in or out)", v_roof, "m/s", None, "info", "uncaptured interval: covers close on the ropes once the jig is down"),
         check("Slot velocity", v_slot, "m/s", None, "info", "8 × 700 × 30 per side"),
         check("Plenum / slot velocity ratio", v_plen / v_slot, "-", 0.5, "max", "uniform slot flow rule (ACGIH)"),
         check("Header velocity", v_hdr, "m/s", 10.0, "min", "fume transport"),
         check("Outlet Ø700 velocity", v_out, "m/s", 10.0, "min", "fume transport"),
         check("Hood static pressure at the outlet flange", total, "mmWC", None, "info", "ZFE fan and bag filter add their own losses (O-16)"),
+        check("Idle-bath loss, open (8.4 m²)", P_open, "kW", None, "info", f"ε {eps_z} (A-14), enclosure air 60 °C"),
+        check("Idle-bath loss with the west door down as the cover", P_cov, "kW", None, "info", f"cover hot face ≈{Tc:.0f} °C, top skin ≈{cover_top:.0f} °C"),
+        check("Heat saved while the bath is covered", saving, "kW", None, "info", "D-27"),
+        check("Gas saved per day of idle cover", gas_day, "Nm3/day", None, "info", f"{idle:.0f} h/day idle (A-15), available heat 60 %"),
+        check("Cover top skin temperature", cover_top, "degC", 80, "max", "people reach over it at the west side"),
+        check("West door mass (estimate)", m_door, "kg", None, "info", "SS 304 3 mm + MS 2 mm skins, 75 blanket + 25 microporous, RHS frame"),
+        check("Slew-drive torque per end at horizontal", T_end, "kN·m", 10.0, "max", "≥ 10 kN·m output drive (A)"),
+        check("Load per carriage hoist", hoist_load, "t", 2.0, "max", "2 t chain hoists"),
     ]
     return {"id": "C-15", "title": "Zinc fume enclosure: capture, open-face velocities and hood losses",
             "method": ["Enclosure air taken at 50 °C (A). Wall plane = casing outer face (D-24).",
                        "Requirement: the larger of two volume changes per minute and 2,000 m3/h per m2 of bath (SHIVAS HDG practice).",
                        "Open-face velocity = capture flow / (rope slot + door openings); 0.5 m/s minimum for an enclosing hood over a hot process (ACGIH).",
                        "Slot entry loss 1.78 VP; plenum friction over half its length; duct friction from fluids (Colebrook)."],
-            "results": {"rows": rows, "total": total, "V": V, "A_bath": A_bath, "q_req": q_req, "v_slot": v_slot, "v_plen": v_plen},
+            "results": {"rows": rows[:4], "total": total, "V": V, "A_bath": A_bath, "q_req": q_req, "v_slot": v_slot, "v_plen": v_plen,
+                        "q_open": q_open, "q_cov": q_cov, "saving_kW": saving, "m_door": m_door, "T_end": T_end},
             "checks": checks,
-            "notes": ["The skimming doors stop at a 1,000 mm lift for skimming. At that opening, one side open, the face "
+            "notes": ["D-27: the west door is also the kettle cover. It lifts 1,000 for skimming like the east door, and with its carriages seated it turns "
+                      "90° inward on slew drives and lies on the kettle with its SS hot skin down. Covering the idle bath saves the radiation and convection "
+                      "from 8.4 m² of zinc at 450 °C; the figures above are estimates on the stated emissivity and idle hours.",
+                      "The skimming doors stop at a 1,000 mm lift for skimming. At that opening, one side open, the face "
                       "velocity stays above 0.5 m/s. Opening both sides together, or one side to full lift, drops it well "
                       "below. The door controls therefore let only one side open at a time; full lift is for maintenance (D-25).",
                       "The roof is open only while a jig goes in or comes out. The covers close on the crane ropes, which run in the "

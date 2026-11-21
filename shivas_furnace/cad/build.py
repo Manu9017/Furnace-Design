@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import csv
+import math
 import json
 import time
 
 from ..basis import B, G, ROOT
-from . import combustion, furnace, loop
+from . import combustion, furnace, loop, materials
 from .lib import SYSTEMS, Registry
 
 OUT = ROOT / "out" / "cad"
@@ -18,6 +19,10 @@ def flows():
     hx = g.lfX - 225          # alley centreline X (between kettle 675 and lining 1125)
     hy = g.lfY - 225
     rx, ry = g.ring[0], g.ring[1]
+    xm = (g.flue_pass_X[0] + g.flue_pass_X[1]) / 2
+    fp_in, fp_out = [xm, -g.lfY + 150, g.flue_zc], [xm, -g.cYo, g.flue_zc]
+    cxb, cyb = g.flue_bend_c
+    arc = [[cxb + g.flue_R * math.cos(math.radians(t)), cyb + g.flue_R * math.sin(math.radians(t)), g.flue_zc] for t in range(0, -91, -15)]
 
     def gasleg(sg):
         mx, my = g.leg_main
@@ -27,16 +32,16 @@ def flows():
         "flames": [{"p": [-g.bX, g.lfY, g.bZ], "d": [0, -1, 0], "len": 4200, "r": g.flame_d / 2},
                    {"p": [g.bX, -g.lfY, g.bZ], "d": [0, 1, 0], "len": 4200, "r": g.flame_d / 2}],
         "paths": [
-            {"id": "alley1", "name": "Burner 1 gas, west alley → round the kettle", "c": "#FF6A1A", "T": 1000, "speed": 3.0,
-             "pts": [[-g.bX, g.lfY, a], [-g.bX, -hy, a], [0, -hy, a], [hx, -hy, a], [hx, hy, a], [0, hy, a], [-hx, hy, a], [-hx, 0, a], [-hx, g.flueY, -450], [-g.cXo, g.flueY, -450]]},
-            {"id": "alley2", "name": "Burner 2 gas, east alley → round the kettle", "c": "#FF8A2A", "T": 1000, "speed": 3.0,
-             "pts": [[g.bX, -g.lfY, a], [g.bX, hy, a], [0, hy, a], [-hx, hy, a], [-hx, -1500, a], [-hx, g.flueY, -450], [-g.cXo, g.flueY, -450]]},
-            {"id": "flue", "name": "Flue 800 °C → junction", "c": "#D7263D", "T": 800, "speed": 2.0,
-             "pts": [[-g.cXo, g.flueY, -450], [-2650, g.flueY, -450], [-2650, -2600, -500]]},
+            {"id": "alley1", "name": "Burner 1 gas, west alley → round the kettle → down to the SW flue port", "c": "#FF6A1A", "T": 1000, "speed": 3.0,
+             "pts": [[-g.bX, g.lfY, a], [-g.bX, -hy, a], [0, -hy, a], [hx, -hy, a], [hx, hy, a], [0, hy, a], [-hx, hy, a], [-hx, 0, a], [-hx, -hy, -800], fp_in, fp_out]},
+            {"id": "alley2", "name": "Burner 2 gas, east alley → round the kettle → SW flue port", "c": "#FF8A2A", "T": 1000, "speed": 3.0,
+             "pts": [[g.bX, -g.lfY, a], [g.bX, hy, a], [0, hy, a], [-hx, hy, a], [-hx, -1500, a], [-hx, -hy, -800], fp_in, fp_out]},
+            {"id": "flue", "name": "Flue 800 °C → R700 bend in the south pit → junction", "c": "#D7263D", "T": 800, "speed": 2.0,
+             "pts": [fp_out, [g.flue_xc, g.flue_ys, g.flue_zc]] + arc + [[g.flue_end_x, g.flue_run_y, g.flue_zc], [-2650, g.flue_run_y, -800]]},
             {"id": "return", "name": "Dryer return 100 °C", "c": "#E9C46A", "T": 100, "speed": 2.4,
-             "pts": [[-4675, 0, -700], [-4300, 0, -650], [-3150, 0, -500], [-2650, -100, -500], [-2650, -2400, -500]]},
+             "pts": [[-4675, 0, -700], [-4300, 0, -650], [-3150, 0, -500], [-2650, -100, -500], [-2650, -4300, -500], [-2650, g.flue_run_y + 200, -800]]},
             {"id": "suction", "name": "Suction ≈124 °C → mixing box → Ø1100 duct → blower", "c": "#E8743B", "T": 124, "speed": 2.4,
-             "pts": [[-2650, -2600, -500], [-2650, -7200, -500], [-2650, -7600, 300], [-2650, -7600, 900], [g.suction[0], -7600, 900], [g.rb_axis[1] + 150, -7600, 900]]},
+             "pts": [[-2650, g.flue_run_y - 200, -800], [-2650, -6600, -500], [-2650, -7200, -500], [-2650, -7600, 300], [-2650, -7600, 900], [g.suction[0], -7600, 900], [g.rb_axis[1] + 150, -7600, 900]]},
             {"id": "fresh", "name": "Fresh air 30 °C", "c": "#2A9DF4", "T": 30, "speed": 1.6,
              "pts": [[-2650, -8900, 300], [-2650, -8700, 450], [-2650, -8250, 700], [-2650, -7800, 800]]},
             {"id": "discharge", "name": "Discharge 120 °C → corner → north to the supply box", "c": "#F2A541", "T": 120, "speed": 2.6,
@@ -44,7 +49,7 @@ def flows():
             {"id": "bleed", "name": "Bleed → stack", "c": "#9AA1AA", "T": 120, "speed": 2.0,
              "pts": [list(p) for p in g.bleed_route] + [[g.stack[0], g.stack[1], 12500]]},
             *[{"id": f"zfe{k}", "name": "Zinc fume → lateral slots → header → Ø700 to the bag filter", "c": "#B9C8E8", "T": 60, "speed": 1.6,
-               "pts": [[sx * 250, y, 400], [sx * 600, y, 3400], [sx * 1011, y, 4200], [sx * 1011, 4300, 4476], [0, 4400, 4476], [0, 5300, 4476], [4600, 5300, 4476]]}
+               "pts": [[sx * 250, y, 400], [sx * 600, y, 3400], [sx * 981, y, 4200], [sx * 981, 4300, 4476], [0, 4400, 4476], [0, 5300, 4476], [4600, 5300, 4476]]}
               for k, (sx, y) in enumerate([(sx, y) for sx in (-1, 1) for y in (-3000, -1000, 1000, 3000)])],
             *[{"id": f"dry{k}", "name": "Drying air across the loads", "c": "#F2A541", "T": 120, "speed": 1.4,
                "pts": [[g.dX0 + 360, y, z], [g.dX1 - 360, y, z]]} for k, (y, z) in enumerate([(y, z) for y in (-2800, -1400, 0, 1400, 2800) for z in (-1050, -650, -300)])],
@@ -76,6 +81,7 @@ def build(step=True):
     furnace.build(R)
     combustion.build(R)
     loop.build(R)
+    materials.apply(R)
     t1 = time.time()
     bad = [p.name for p in R.parts if not p.shape.val().isValid()]
     OUT.mkdir(parents=True, exist_ok=True)

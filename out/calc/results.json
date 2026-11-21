@@ -440,6 +440,16 @@
       57.9049
      ]
     },
+    "flue duct in pit": {
+     "q": 276.5722,
+     "T": [
+      800,
+      625.3259,
+      68.022,
+      67.9851,
+      40
+     ]
+    },
     "cover RevH": {
      "q": 871.8674,
      "T": [
@@ -602,7 +612,27 @@
      "limit": null,
      "kind": "info",
      "status": "INFO",
-     "note": "inside the vented trench, not accessible",
+     "note": "in the vented link trench, not accessible",
+     "ref": false
+    },
+    {
+     "name": "Flue duct skin in the south burner pit (D-26)",
+     "value": 67.9851,
+     "unit": "degC",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "pit air 40 \u00b0C; above the 60 \u00b0C touch limit, so guarded (FLU-05)",
+     "ref": false
+    },
+    {
+     "name": "Flue duct heat loss in the pit",
+     "value": 276.5722,
+     "unit": "W/m2",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "\u22483.4 m\u00b2 of shell in the pit",
      "ref": false
     },
     {
@@ -827,7 +857,8 @@
    "id": "C-07",
    "title": "Flue passage and lined flue duct",
    "method": [
-    "Q = Nm\u00b3/h \u00d7 (T+273)/273 / 3600."
+    "Q = Nm\u00b3/h \u00d7 (T+273)/273 / 3600.",
+    "Duct loss: Colebrook friction on the hydraulic diameter + K (sharp-edged port entry 0.5, rectangular 90\u00b0 bend at R/W 1.0 \u2248 0.25, exit into the junction 1.0)."
    ],
    "results": {
     "rows": [
@@ -861,6 +892,26 @@
      "ref": false
     },
     {
+     "name": "Flue duct length, port \u2192 junction (D-26)",
+     "value": 2.0446,
+     "unit": "m",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "south end wall, R700 bend, through the pit wall",
+     "ref": false
+    },
+    {
+     "name": "Flue duct pressure loss incl. R700 bend",
+     "value": 8.9381,
+     "unit": "Pa",
+     "limit": 10.0,
+     "kind": "max",
+     "status": "PASS",
+     "note": "the loop suction pulls the furnace; keep it small",
+     "ref": false
+    },
+    {
      "name": "D-10 duct 700 \u00d7 400 velocity",
      "value": 5.4032,
      "unit": "m/s",
@@ -881,7 +932,9 @@
      "ref": true
     }
    ],
-   "notes": []
+   "notes": [
+    "D-26 moves the outlet to the south end wall at the SW corner, 50 mm above the hearth, so the combustion gas sweeps the full kettle wall height before it leaves. The duct turns west on a radiused bend (no mitred corner): at R/W 1.0 the bend costs K \u2248 0.25 instead of \u22481.2 for a mitre."
+   ]
   },
   {
    "id": "C-08",
@@ -987,19 +1040,19 @@
    "results": {
     "rows": [
      [
-      "Return trench 900 \u00d7 1000, 5.5 m, 2 radiused bends",
+      "Return trench 900 \u00d7 1000, 6.0 m, 2 radiused bends",
       12.0667,
-      5.8314
+      5.9107
      ],
      [
-      "Junction (radiused merge)",
+      "Junction sump with 60\u00b0 benching (D-26)",
       12.27,
-      2.6879
+      4.0318
      ],
      [
-      "Suction trench 1000 \u00d7 1000, 4 m",
+      "Suction trench 1000 \u00d7 1000, 1.3 m",
       12.27,
-      0.5971
+      0.1902
      ],
      [
       "Mixing box S2 with R700 deflector (SH-MB-01)",
@@ -1052,7 +1105,7 @@
       5.8038
      ]
     ],
-    "total": 70.9314,
+    "total": 71.9477,
     "feed_v": 12.5714,
     "ratio": 2.0539,
     "end_ratio": 0.3038,
@@ -1063,7 +1116,7 @@
    "checks": [
     {
      "name": "Loop total (D-12 centre-fed boxes)",
-     "value": 70.9314,
+     "value": 71.9477,
      "unit": "mmWC",
      "limit": 72.0,
      "kind": "max",
@@ -1073,7 +1126,7 @@
     },
     {
      "name": "Loop total vs fan if 72 mmWC is a 20 \u00b0C rating",
-     "value": 70.9314,
+     "value": 71.9477,
      "unit": "mmWC",
      "limit": 53.6572,
      "kind": "max",
@@ -1590,7 +1643,12 @@
     "A_bath": 8.375,
     "q_req": 16750.0,
     "v_slot": 16.5344,
-    "v_plen": 7.9365
+    "v_plen": 7.9365,
+    "q_open": 9514.0232,
+    "q_cov": 208.129,
+    "saving_kW": 77.5011,
+    "m_door": 1501.9834,
+    "T_end": 9.0249
    },
    "checks": [
     {
@@ -1624,7 +1682,7 @@
      "ref": false
     },
     {
-     "name": "Open-face velocity, one door at the skimming stop",
+     "name": "Open-face velocity, east door at the skimming stop",
      "value": 0.6061,
      "unit": "m/s",
      "limit": 0.5,
@@ -1634,8 +1692,18 @@
      "ref": false
     },
     {
+     "name": "Open-face velocity, west door lifted to skim",
+     "value": 0.5853,
+     "unit": "m/s",
+     "limit": 0.5,
+     "kind": "min",
+     "status": "PASS",
+     "note": "D-27: opening +0.450 \u2192 +1.450",
+     "ref": false
+    },
+    {
      "name": "Open-face velocity, both doors at the skimming stop",
-     "value": 0.3329,
+     "value": 0.3265,
      "unit": "m/s",
      "limit": 0.5,
      "kind": "min",
@@ -1644,13 +1712,23 @@
      "ref": true
     },
     {
-     "name": "Open-face velocity, one door at full lift",
-     "value": 0.3031,
+     "name": "Open-face velocity, east door at full lift",
+     "value": 0.3768,
      "unit": "m/s",
      "limit": null,
      "kind": "info",
      "status": "INFO",
      "note": "maintenance only, burners at low fire (D-25)",
+     "ref": false
+    },
+    {
+     "name": "West side open with the kettle cover down",
+     "value": 0.2612,
+     "unit": "m/s",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "bath covered, no dipping; ZFE damper to 50 % (D-27)",
      "ref": false
     },
     {
@@ -1712,9 +1790,90 @@
      "status": "INFO",
      "note": "ZFE fan and bag filter add their own losses (O-16)",
      "ref": false
+    },
+    {
+     "name": "Idle-bath loss, open (8.4 m\u00b2)",
+     "value": 79.6799,
+     "unit": "kW",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "\u03b5 0.35 (A-14), enclosure air 60 \u00b0C",
+     "ref": false
+    },
+    {
+     "name": "Idle-bath loss with the west door down as the cover",
+     "value": 2.1789,
+     "unit": "kW",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "cover hot face \u2248441 \u00b0C, top skin \u224871 \u00b0C",
+     "ref": false
+    },
+    {
+     "name": "Heat saved while the bath is covered",
+     "value": 77.5011,
+     "unit": "kW",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "D-27",
+     "ref": false
+    },
+    {
+     "name": "Gas saved per day of idle cover",
+     "value": 78.2839,
+     "unit": "Nm3/day",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "6 h/day idle (A-15), available heat 60 %",
+     "ref": false
+    },
+    {
+     "name": "Cover top skin temperature",
+     "value": 70.7046,
+     "unit": "degC",
+     "limit": 80,
+     "kind": "max",
+     "status": "PASS",
+     "note": "people reach over it at the west side",
+     "ref": false
+    },
+    {
+     "name": "West door mass (estimate)",
+     "value": 1501.9834,
+     "unit": "kg",
+     "limit": null,
+     "kind": "info",
+     "status": "INFO",
+     "note": "SS 304 3 mm + MS 2 mm skins, 75 blanket + 25 microporous, RHS frame",
+     "ref": false
+    },
+    {
+     "name": "Slew-drive torque per end at horizontal",
+     "value": 9.0249,
+     "unit": "kN\u00b7m",
+     "limit": 10.0,
+     "kind": "max",
+     "status": "PASS",
+     "note": "\u2265 10 kN\u00b7m output drive (A)",
+     "ref": false
+    },
+    {
+     "name": "Load per carriage hoist",
+     "value": 0.931,
+     "unit": "t",
+     "limit": 2.0,
+     "kind": "max",
+     "status": "PASS",
+     "note": "2 t chain hoists",
+     "ref": false
     }
    ],
    "notes": [
+    "D-27: the west door is also the kettle cover. It lifts 1,000 for skimming like the east door, and with its carriages seated it turns 90\u00b0 inward on slew drives and lies on the kettle with its SS hot skin down. Covering the idle bath saves the radiation and convection from 8.4 m\u00b2 of zinc at 450 \u00b0C; the figures above are estimates on the stated emissivity and idle hours.",
     "The skimming doors stop at a 1,000 mm lift for skimming. At that opening, one side open, the face velocity stays above 0.5 m/s. Opening both sides together, or one side to full lift, drops it well below. The door controls therefore let only one side open at a time; full lift is for maintenance (D-25).",
     "The roof is open only while a jig goes in or comes out. The covers close on the crane ropes, which run in the 200 mm slot, before the jig is dipped.",
     "Each slot plenum doubles as a settling chamber: the velocity in it is below fume transport velocity by design, so it has cleaning doors. The header and the \u00d8700 outlet run at transport velocity."
@@ -1722,10 +1881,10 @@
   }
  ],
  "counts": {
-  "INFO": 42,
+  "INFO": 51,
   "SUPERSEDED": 12,
   "MARGINAL": 2,
-  "PASS": 39,
+  "PASS": 44,
   "FAIL": 1
  }
 }

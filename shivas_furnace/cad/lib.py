@@ -106,6 +106,17 @@ def quarter_ring(cx, cy, r_in, r_out, z0, z1, quad):
     return ring.intersect(q)
 
 
+def prism_x(pts_yz, x0, x1):
+    """Prism along X from a polygon given in (Y, Z)."""
+    return cq.Workplane("YZ").workplane(offset=x0).polyline(pts_yz).close().extrude(x1 - x0)
+
+
+def prism_y(pts_xz, y0, y1):
+    """Prism along Y from a polygon given in (X, Z)."""
+    w = cq.Workplane("XZ").workplane(offset=-y0).polyline(pts_xz).close().extrude(-(y1 - y0))
+    return w
+
+
 def merge(*ws):
     out = None
     for w in ws:
@@ -187,6 +198,7 @@ class Part:
     pid: str = ""           # P&ID tag (SH-PID-02A Rev U) or line number
     pidgroup: str = ""      # A / D / burner 1 / burner 2 / lines
     anim: str = ""          # viewer motion group: roofW / roofE / doorW / doorE / chain
+    proxy: object = None    # simplified solid for the 2-D drawings (hidden-line removal) when the model part is very detailed
 
 
 @dataclass

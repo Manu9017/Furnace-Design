@@ -1,6 +1,6 @@
 # SHV-FUR-6700 — HV pulse-fired galvanizing furnace and 4-position dryer
 
-SHIVAS Technology Ltd · hot dip galvanizing division · design package Rev A · 2026-11-20 (updated 2026-11-21 for SH-PID-02A Rev U, the corner blower and the zinc enclosure)
+SHIVAS Technology Ltd · hot dip galvanizing division · design package Rev A · 2026-11-20 (updated 2026-11-21: SH-PID-02A Rev U, corner blower, zinc enclosure with the kettle-cover door, south-end flue with radiused bends, dryer doors and drives)
 
 This repository is a stand-alone engineering project. It holds one
 high-velocity pulse-fired furnace with a 6,700 × 1,250 × 1,310 kettle, its combustion system per P&ID SH-PID-02A Rev U, the
@@ -19,15 +19,15 @@ open items in `basis/open_items.md` must be closed first.
 | Path | What |
 |---|---|
 | `basis/design_basis.yaml` | 171 values, each with its unit, source document and status: confirmed, decided here, assumed, or open; the P&ID bill of material tag for tag |
-| `basis/decision_register.md` | 25 decisions where the SHIVAS documents disagreed, a check failed, or the owner instructed a change |
-| `basis/open_items.md` | 19 open items, the 6 holds carried from the P&ID, and 13 assumptions, each with an owner |
+| `basis/decision_register.md` | 28 decisions where the SHIVAS documents disagreed, a check failed, or the owner instructed a change |
+| `basis/open_items.md` | 22 open items, the 6 holds carried from the P&ID, and 17 assumptions, each with an owner |
 | `shivas_furnace/calc/` | 14 calculations (Cantera combustion, heat balance and wall flux, linings, air, gas, flue, loop energy and pressure, fans, structure, stack, energy, insulation quantities, zinc-fume extraction) |
-| `shivas_furnace/cad/` | CadQuery model, one builder per system: `furnace.py`, `combustion.py`, `loop.py` |
+| `shivas_furnace/cad/` | CadQuery model, one builder per system: `furnace.py`, `combustion.py`, `loop.py`, `enclosure.py` |
 | `shivas_furnace/drawings/` | GA sheet generator: hidden-line views, filled sections, dimensions, levels, title blocks |
 | `viewer/` | three.js 3D viewer and drawing register (published as a claude.ai artifact) |
 | `out/calc/` | `SHV-FUR-6700-CR.html` calculation report and `results.json` |
 | `out/cad/` | `SHV-FUR-6700.step` (master geometry, full assembly tree), `.glb`, `bom.csv`, `parts.json` |
-| `out/drawings/` | `GA-001…007` as DXF, PDF and PNG previews, plus `SHV-FUR-6700-GA-set.pdf` |
+| `out/drawings/` | `GA-001…008` as DXF, PDF and PNG previews, plus `SHV-FUR-6700-GA-set.pdf` |
 | `.claude/skills/` | The mechanical-engineering skills (MIT) that shaped the method |
 
 ## Sources it is built from
@@ -53,8 +53,9 @@ The SHIVAS documents from earlier work. Each value in the basis names its source
 | Fired duty at 6.0 t/h | ≈761 kW of 1,172 kW installed; 12.8 Nm³ gas per tonne; furnace efficiency ≈60 % |
 | Casing skin | 61–65 °C at 900–1,000 °C hot face (175 module + 50 microporous + 25 CaSi) |
 | Kettle support | 36 ribs 12 × 200, σ ≈ 100 MPa vs 140 allowable; kettle grows ≈39 mm, slides on a graphite strip |
-| Loop | mix ≈124 °C, dryer ≈209 kW, bleed 4,729 Nm³/h ≈ 150 kW; loop needs ≈71 mmWC with the corner blower (O-07) |
-| Zinc enclosure | 20,000 m³/h, 3.1 changes/min; 0.61 m/s open face with one door at the 1,000 mm skimming stop; ≈52 mmWC to the outlet flange |
+| Loop | mix ≈124 °C, dryer ≈209 kW, bleed 4,729 Nm³/h ≈ 150 kW; loop needs ≈72 mmWC with the corner blower and the relocated junction (O-07) |
+| Zinc enclosure | 20,000 m³/h, 3.1 changes/min; ≥ 0.59 m/s open face with either door at the skimming stop; ≈52 mmWC to the outlet flange; the west door as kettle cover saves ≈77 kW on an idle bath |
+| Flue | south end wall, SW corner, 50 above the hearth; R700 bend; ≈9 Pa duct loss |
 
 ## Build
 

@@ -12,7 +12,7 @@ Nothing on this list is invented in the model. Where a value is needed to draw o
 | O-04 | **AEP-VB-2.5 rating basis** (actual or normal m³/h). SH-PID-02A Rev U fixes the blower and its 7.5 HP motor; the 1,400 m³/h at 725 mmWC duty comes from Rev H. Full fire at λ 1.125 needs ≈1,430 m³/h at 35 °C. At λ 1.125 the blower supports ≈1,147 kW. Production needs ≈760–840 kW, so the limit only applies at full fire. | AEP | C-01, C-11 |
 | O-05 | **Stack height and sampling port** against the SPCB consent. | Client / SPCB | Stack |
 | O-06 | **PNG supply pressure and J125-S4 outlet set point.** Pipework loss skid → north burner is ≈6 mbar at full fire. | Gas supplier | C-06 |
-| O-07 | **AEP-ZA-9.0: is 72 mmWC rated at 20 °C or at 120 °C?** The loop needs ≈71 mmWC hot with centre-fed boxes and the corner blower (D-22). A 20 °C rating gives only ≈54 mmWC hot. | AEP | C-09 |
+| O-07 | **AEP-ZA-9.0: is 72 mmWC rated at 20 °C or at 120 °C?** The loop needs ≈72 mmWC hot with centre-fed boxes, the corner blower (D-22) and the relocated junction (D-26). A 20 °C rating gives only ≈54 mmWC hot. | AEP | C-09 |
 | O-08 | **Rev K skin target of 53–55 °C** cannot be reached in 250 mm at a 900–1,000 °C hot face. D-05 gives 61–65 °C. Either accept that, or thicken locally where people stand. | SHIVAS | C-04 |
 | O-09 | **Mixing-box handing.** The blower cut-out face differs between Rev N (right face) and SH-MB-01 Rev A (left face). The model follows SH-MB-01 (west face). | SHIVAS | Layout |
 | O-10 | *Closed.* Burner count: SH-PID-02A Rev U and Bloom PO 1018 give 4 HV-400 for two furnaces, 2 per furnace. | — | — |
@@ -24,6 +24,9 @@ Nothing on this list is invented in the model. Where a value is needed to draw o
 | O-16 | **Zinc-fume bag filter (ZFE) location, fan and duct route beyond the flanged stub.** The model stops the Ø700 at X +4.6 m, north of the furnace. The fan must cover ≈52 mmWC hood loss plus the filter and duct. | SHIVAS | C-15 |
 | O-17 | **Enclosure structure**: posts, girts, outriggers and the deck connection over the casing walls (D-24), and wind on the 4.7 m walls. | Structural engineer | Enclosure |
 | O-18 | **Door interlock**: only one skimming door open at a time, and the skimming stop at 1,000 mm (D-25), to be written into the enclosure control logic. | SHIVAS | C-15 |
+| O-20 | **Flue duct in the south burner pit (D-26)**: hot surface (≈68 °C skin, guarded) near the burner-2 gas train and the DN50 main drop; review against the combustion-safety study (O-13) and confirm the pit fan still sweeps the duct corner. | SHIVAS | Pit layout |
+| O-21 | **Kettle-cover interlocks (D-27)**: crane position (no jig over the bath), both carriages seated, roof covers state; slew-drive torque and holding rating from the supplier (needs ≥ 9.0 kN·m per end). | SHIVAS / supplier | C-15 |
+| O-22 | **Dryer switches at temperature**: the P4 cat-whisker switch sits in 100–120 °C air; confirm a head rated ≥ 150 °C or move the body outside the wall with a through-wall rod. | Supplier | D-28 |
 | O-19 | **SH-PID-02A Rev U start-up sequence text** still says "PILOT: C2 opens, C7 sparks at C18, C6 must prove the pilot" and lists trip C17. Neither C17 nor C18 is on the bill of material, and note 2 says direct spark through C12 with no pilot. Correct the sequence to: ignition gas C2 opens, C7 sparks at C12, C6 proves the ignition flame. | SHIVAS / Eclipse | BMS |
 
 ## Holds on SH-PID-02A Rev U (carried from the P&ID)
@@ -48,7 +51,11 @@ Nothing on this list is invented in the model. Where a value is needed to draw o
 | A-05 | Regulated gas pressure 100 mbar(g). | Conservative on velocity |
 | A-06 | *Closed.* Combustion blower motor 7.5 HP = 5.5 kW, now in SH-PID-02A Rev U. | — |
 | A-12 | Enclosure air 50 °C for the extraction losses (C-15). | Neutral |
-| A-13 | Skimming-door windows sit in the doors at a +1.300 sill (eye level from FFL); the annexure does not place them. | — |
+| A-13 | Windows sit in the doors at a +1.300 sill (eye level from FFL): 4 × 600 × 600 in the east door, 4 × 300 × 300 glass-ceramic in the west door because it is also the kettle cover. | — |
+| A-14 | Idle zinc surface emissivity 0.35 (oxidised, with ash) for the open-bath loss. | Neutral |
+| A-15 | The bath stands idle and can be covered 6 h a day. | — |
+| A-16 | West-door slew drives ≥ 10 kN·m output, 30 kN·m holding; carriage hoists 2 t. | — |
+| A-17 | Chain drives 2 × 3.7 kW (one per strand), replacing the single 5.5 kW. | Conservative |
 | A-07 | Safe bearing capacity 150 kN/m². The pad bears ≈49 kN/m². | — |
 | A-08 | Ventilated foundation channels at 50 °C air, h = 12 W/m²K at the casing underside. Flue trench air at 45 °C. | Must be checked at commissioning |
 | A-09 | Lining hot face 1,000 °C for design, 1,100 °C beside the burner blocks. | Conservative for most of the wall |

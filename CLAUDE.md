@@ -12,10 +12,11 @@ This repository is a stand-alone engineering project for SHIVAS Technology Ltd. 
   Run the full `python3 build.py` before committing outputs.
 - Calculation results are drafts until a qualified engineer signs the report. Do not write "checked" or "approved".
 - Do not claim CE, ISO 9001 or EN 746 compliance. Combustion safety is an open review item (O-13).
+- Every change of direction on the flue is radiused (D-26); keep it that way.
 
 ## Layout
 - `shivas_furnace/basis.py`: loader + derived geometry `G` (all positions come from here)
-- `shivas_furnace/calc/`: `engine.py` (calcs C-01…C-14), `report.py` (HTML report + results.json)
-- `shivas_furnace/cad/`: `lib.py` (primitives, registry, colours), `furnace.py`, `combustion.py`, `loop.py`, `build.py`
-- `shivas_furnace/drawings/`: `sheets.py` (HLR views, filled sections, dims, title block), `make.py` (GA-001…006)
+- `shivas_furnace/calc/`: `engine.py` (calcs C-01…C-15), `report.py` (HTML report + results.json)
+- `shivas_furnace/cad/`: `lib.py` (primitives, registry, colours), `furnace.py`, `combustion.py`, `loop.py`, `enclosure.py`, `build.py`
+- `shivas_furnace/drawings/`: `sheets.py` (HLR views, filled sections, dims, title block), `make.py` (GA-001…008)
 - `viewer/`: three.js viewer (`index.html`) and drawing register (`drawings.html`); `build.py` stages `out/site/`

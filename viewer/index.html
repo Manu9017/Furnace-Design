@@ -201,11 +201,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
       <button type="button" id="tMeas" aria-pressed="false">Measure</button>
       <button type="button" id="tAll">Show all</button>
     </div>
-    <div class="grp" role="group" aria-label="Zinc enclosure">
+    <div class="grp" role="group" aria-label="Moving parts">
       <button type="button" id="eRoof" aria-pressed="false">Roof: closed</button>
       <button type="button" id="eDoorW" aria-pressed="false">West door: closed</button>
       <button type="button" id="eDoorE" aria-pressed="false">East door: closed</button>
       <button type="button" id="eHide" aria-pressed="false">Hide enclosure</button>
+      <button type="button" id="dDoors" aria-pressed="false">Dryer doors: closed</button>
     </div>
   </div>
   <div id="hint">Drag to orbit · right-drag to pan · scroll to zoom · tap a part for its data</div>
@@ -420,7 +421,8 @@ function renderPane() {
       <dt>Casing</dt><dd>8,200 × 2,750 inside, −1.575 → +0.150, sunk</dd><dt>Burners</dt><dd>2 × Bloom HV-400, 586 kW each, direct spark, axis −0.390 (SH-PID-02A Rev U)</dd>
       <dt>Firing</dt><dd>1,172 kW installed; ≈760 kW at 6.0 t/h</dd><dt>Dryer</dt><dd>4 positions, 6.0 × 7.5 × 1.4 m clear, 100–120 °C</dd>
       <dt>Loop</dt><dd>AEP-ZA-9.0 48,000 m³/h at the SW corner, Ø1100 suction duct from mixing box S2, Ø400 × 12 m stack</dd>
-      <dt>Enclosure</dt><dd>8.2 × 2.75 × 4.72 m on the deck; 2 sliding roof covers, vertical-lift skimming doors, 20,000 m³/h to the bag filter</dd></dl>
+      <dt>Enclosure</dt><dd>8.2 × 2.75 × 4.72 m on the deck; 2 sliding roof covers; east lift door; west door lifts to skim and turns down to become the kettle cover; 20,000 m³/h to the bag filter</dd>
+      <dt>Flue</dt><dd>South end wall, SW corner, 50 above the hearth; R700 bend in the south pit; no mitred corners</dd></dl>
       <p class="note">Status colours on every part: <span class="pill st-C">confirmed</span> <span class="pill st-D">decided</span> <span class="pill st-A">assumed</span> <span class="pill st-O">open</span>. Decisions and open items are in their own tabs.</p>`;
       return;
     }
@@ -552,7 +554,8 @@ function setStream(s, t, tmp) {
 
 /* ---------------- labels ---------------- */
 const LBL = [['KET-01 Kettle', 'Kettle 64 t zinc'], ['BUR-01 Burner 1', 'Burner 1'], ['BUR-02 Burner 2', 'Burner 2'], ['FLU-01 Lined flue duct', 'Flue duct'],
-  ['HRL-05 Mixing box S2', 'Mixing box S2'], ['HRL-07 Recirculation blower', 'Recirc. blower'], ['DRY-11 Top deck and fixed cover', '4-position dryer'],
+  ['HRL-05 Mixing box S2', 'Mixing box S2'], ['HRL-07 Recirculation blower', 'Recirc. blower'], ['DRY-11a Raised centre fixed cover', '4-position dryer'],
+  ['ZEN-07a West door / kettle cover', 'Kettle-cover door'], ['DRY-17 P4 cat-whisker switch', 'P4 whisker'],
   ['STK-01 Stack Ø400 × 12 m', 'Stack Ø400'], ['GAS-01 Gas train A skid frame', 'Gas train A1–A11'], ['BLW Combustion air blower AEP-VB-2.5', 'Comb. air blower'],
   ['HRL-12 Suction duct Ø1100', 'Suction duct Ø1100'], ['ZEN-09b Roof cover east', 'Zinc enclosure'], ['ZEN-13 Outlet duct Ø700', 'To bag filter'],
   ['VEN-PF-N Pit fan', 'Pit fan N'], ['VEN-PF-S Pit fan', 'Pit fan S'], ['CIV-02 Zinc leak pits', 'Leak pits'], ['TOP-07 Corner shield NW', 'SS shield'],
@@ -612,6 +615,7 @@ const VIEWS = {
   loop: ['Loop', [3.0, 9.0, 15.5], [-5.0, -0.4, 5.0]],
   blower: ['Blower', [-5.0, 5.0, 1.0], [-10.6, 0.5, 7.6]],
   enc: ['Enclosure', [12.5, 8.0, 6.5], [-0.4, 1.6, 0.0]],
+  flue: ['Flue', [-4.6, 3.4, 8.6], [-1.0, -1.1, 4.9]],
   top: ['Plan', [-1.6, 50, 4.61], [-1.6, 0, 4.6]],
 };
 let anim = null;
@@ -644,9 +648,9 @@ function applySect() {
 }
 Object.values(S).forEach(s => { s.r.addEventListener('input', () => { s.e.checked = true; applySect(); }); s.e.addEventListener('change', applySect); });
 const PRE = [['A–A furnace (Y = 0)', {y: 0}, 'secA'], ['B–B west alley (X = −946)', {x: -946}, 'secB'], ['Burner axis plan (Z = −390)', {z: -390}, 'secP'],
-  ['C–C dryer (Y = 0)', {y: 0}, 'secC'], ['Dryer inside (Z = −20)', {z: -20}, 'secD'], ['Loop plan (Z = −200)', {z: -200}, 'secL'], ['Clear', {}, null]];
+  ['C–C dryer (Y = 0)', {y: 0}, 'secC'], ['Dryer inside (Z = −20)', {z: -20}, 'secD'], ['Loop plan (Z = −200)', {z: -200}, 'secL'], ['Flue plan (Z = −1,115)', {z: -1115}, 'secF'], ['Clear', {}, null]];
 Object.assign(VIEWS, {secA: ['', [1.6, 0.6, -7.2], [0, -0.75, 0]], secB: ['', [5.2, 0.8, -1.0], [-1.0, -0.7, 0]],
-  secP: ['', [0.0, 15, 0.01], [0, -0.4, 0]], secC: ['', [-7.5, 1.2, -9.0], [-7.5, -0.7, 0]], secL: ['', [-4.5, 32, 4.01], [-4.5, -0.3, 4.0]], secD: ['', [-2.6, 5.2, 6.4], [-7.5, -1.0, 0]]});
+  secP: ['', [0.0, 15, 0.01], [0, -0.4, 0]], secC: ['', [-7.5, 1.2, -9.0], [-7.5, -0.7, 0]], secL: ['', [-4.5, 32, 4.01], [-4.5, -0.3, 4.0]], secF: ['', [-1.4, 11, 4.91], [-1.4, -1.1, 4.9]], secD: ['', [-2.6, 5.2, 6.4], [-7.5, -1.0, 0]]});
 const spre = $('#spre');
 PRE.forEach(([l, s, v]) => { const b = document.createElement('button'); b.className = 'sb'; b.type = 'button'; b.textContent = l;
   b.onclick = () => { for (const k in S) { S[k].e.checked = k in s; if (k in s) S[k].r.value = s[k]; } applySect(); if (v) go(v); };
@@ -661,20 +665,24 @@ $('#tLev').onclick = () => { showLev = !showLev; $('#tLev').setAttribute('aria-p
 $('#tAll').onclick = () => { for (const k in PART) PART[k].on = !META[k].hidden || PART[k].on; for (const s in SYSVIS) SYSVIS[s] = true; $$('.sysh input').forEach(c => c.checked = true);
   for (const k in S) S[k].e.checked = false; applySect(); applyVis(); };
 
-/* ---------------- zinc enclosure: roof covers and skimming doors (D-24, D-25) ---------------- */
-const ENC = {roof: 0, roofT: 0, W: 0, WT: 0, E: 0, ET: 0, items: []};
-const DOOR_STEPS = [[0, 'closed'], [1000, 'skimming stop'], [2150, 'full lift']];
+/* ---------------- moving parts: enclosure roof + doors (D-24, D-25, D-27) and dryer doors (D-28) ---------------- */
+// West door states: closed / skimming (lift on carriages) / kettle cover (seated, turned 90° inward about its inner bottom edge)
+const ENC = {roof: 0, roofT: 0, W: 0, WT: 0, R: 0, RT: 0, E: 0, ET: 0, dry: 0, dryT: 0, items: []};
+const WEST = [['closed', 0, 0], ['skimming (lifted 1.0 m)', 1000, 0], ['kettle cover', 0, 90]];
+const EAST = [['closed', 0], ['skimming stop', 1000], ['full lift', 1700]];
+let westI = 0, eastI = 0;
 function initEnc() {
   for (const k in PART) {
     const a = META[k].anim; if (!a) continue;
-    const [kind, top] = a.split(':');
+    const [kind, p1, p2] = a.split(':');
     PART[k].nodes.forEach(n => {
       let zmin = null;
       if (kind.startsWith('chain')) { const b = new THREE.Box3(); n.traverse(o => { if (o.isMesh && o.geometry) { o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox); } }); zmin = b.min.z; }
-      ENC.items.push({n, kind, top: +top || 0, zmin, p0: n.position.clone()});
+      ENC.items.push({n, kind, a: +p1 || 0, b: +p2 || 0, zmin, p0: n.position.clone()});
     });
   }
 }
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 function applyEnc() {
   ENC.items.forEach(it => {
     const n = it.n, k = it.kind;
@@ -682,29 +690,42 @@ function applyEnc() {
     else if (k === 'roofE') n.position.x = it.p0.x + ENC.roof;
     else if (k === 'doorW') n.position.z = it.p0.z + ENC.W;
     else if (k === 'doorE') n.position.z = it.p0.z + ENC.E;
-    else if (k === 'chainW' || k === 'chainE') {
-      const d = k === 'chainW' ? ENC.W : ENC.E, L = it.top - it.zmin, sc = Math.max(0.02, (L - d) / L);
-      n.scale.z = sc; n.position.z = it.top * (1 - sc);
-    }
+    else if (k === 'rotW') {                       // CAD frame: rotate about +Y through (a, b) = pivot X, Z; then lift
+      const f = ENC.R * Math.PI / 180, c = Math.cos(f), s = Math.sin(f), px = it.a, pz = it.b;
+      n.quaternion.setFromAxisAngle(Y_AXIS, f);
+      n.position.set(it.p0.x + px - (px * c + pz * s), it.p0.y, it.p0.z + pz - (-px * s + pz * c) + ENC.W);
+    } else if (k === 'chainW' || k === 'chainE') {
+      const d = k === 'chainW' ? ENC.W : ENC.E, L = it.a - it.zmin, sc = Math.max(0.02, (L - d) / L);
+      n.scale.z = sc; n.position.z = it.a * (1 - sc);
+    } else if (k.startsWith('dry')) n.position.x = it.p0.x + it.a * ENC.dry;
   });
 }
 function stepEnc(dt) {
   let moved = false;
   const ease = (cur, tgt, rate) => { if (cur === tgt) return cur; moved = true; const st = rate * dt; return Math.abs(tgt - cur) <= st ? tgt : cur + Math.sign(tgt - cur) * st; };
-  if (RM) { moved = ENC.roof !== ENC.roofT || ENC.W !== ENC.WT || ENC.E !== ENC.ET; ENC.roof = ENC.roofT; ENC.W = ENC.WT; ENC.E = ENC.ET; }
-  else { ENC.roof = ease(ENC.roof, ENC.roofT, 1100); ENC.W = ease(ENC.W, ENC.WT, 1400); ENC.E = ease(ENC.E, ENC.ET, 1400); }
+  if (RM) {
+    moved = ENC.roof !== ENC.roofT || ENC.W !== ENC.WT || ENC.R !== ENC.RT || ENC.E !== ENC.ET || ENC.dry !== ENC.dryT;
+    ENC.roof = ENC.roofT; ENC.W = ENC.WT; ENC.R = ENC.RT; ENC.E = ENC.ET; ENC.dry = ENC.dryT;
+  } else {
+    ENC.roof = ease(ENC.roof, ENC.roofT, 1100); ENC.E = ease(ENC.E, ENC.ET, 1400); ENC.dry = ease(ENC.dry, ENC.dryT, 0.8);
+    // west door interlock: it turns only with the carriages seated, and lifts only when vertical
+    if (ENC.RT > 0) { if (ENC.W > 0) ENC.W = ease(ENC.W, 0, 1400); else ENC.R = ease(ENC.R, ENC.RT, 45); }
+    else { if (ENC.R > 0) ENC.R = ease(ENC.R, 0, 45); else ENC.W = ease(ENC.W, ENC.WT, 1400); }
+  }
   if (moved) applyEnc();
 }
 function encButtons() {
   $('#eRoof').textContent = 'Roof: ' + (ENC.roofT ? 'open' : 'closed'); $('#eRoof').setAttribute('aria-pressed', !!ENC.roofT);
-  [['W', 'West'], ['E', 'East']].forEach(([s, n]) => { const v = ENC[s + 'T']; const st = DOOR_STEPS.find(d => d[0] === v)[1];
-    const b = $('#eDoor' + s); b.textContent = `${n} door: ${st}`; b.setAttribute('aria-pressed', v > 0); });
+  $('#eDoorW').textContent = 'West door: ' + WEST[westI][0]; $('#eDoorW').setAttribute('aria-pressed', westI > 0);
+  $('#eDoorE').textContent = 'East door: ' + EAST[eastI][0]; $('#eDoorE').setAttribute('aria-pressed', eastI > 0);
+  $('#dDoors').textContent = 'Dryer doors: ' + (ENC.dryT ? 'open' : 'closed'); $('#dDoors').setAttribute('aria-pressed', !!ENC.dryT);
 }
+function setWest(i) { westI = i; ENC.WT = WEST[i][1]; ENC.RT = WEST[i][2]; }
+function setEast(i) { eastI = i; ENC.ET = EAST[i][1]; }
 $('#eRoof').onclick = () => { ENC.roofT = ENC.roofT ? 0 : 1400; encButtons(); };
-['W', 'E'].forEach(s => { $('#eDoor' + s).onclick = () => {
-  const i = DOOR_STEPS.findIndex(d => d[0] === ENC[s + 'T']); ENC[s + 'T'] = DOOR_STEPS[(i + 1) % DOOR_STEPS.length][0];
-  if (ENC[s + 'T'] > 0) ENC[(s === 'W' ? 'E' : 'W') + 'T'] = 0;          // D-25: one side open at a time
-  encButtons(); }; });
+$('#eDoorW').onclick = () => { setWest((westI + 1) % WEST.length); if (westI > 0) setEast(0); encButtons(); };     // D-25: one side at a time
+$('#eDoorE').onclick = () => { setEast((eastI + 1) % EAST.length); if (eastI > 0) setWest(0); encButtons(); };
+$('#dDoors').onclick = () => { ENC.dryT = ENC.dryT ? 0 : 1; encButtons(); };
 $('#eHide').onclick = () => { SYSVIS.enclosure = !SYSVIS.enclosure; $('#eHide').setAttribute('aria-pressed', !SYSVIS.enclosure); $('#eHide').textContent = SYSVIS.enclosure ? 'Hide enclosure' : 'Show enclosure';
   const cb = $('.sys[data-s="enclosure"] .sysh input'); if (cb) cb.checked = SYSVIS.enclosure; applyVis(); };
 

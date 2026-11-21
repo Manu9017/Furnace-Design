@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 
 from ..basis import B, G
-from .lib import box, compound, cyl, duct, frame, ibeam, merge, pipe, quarter_ring, sph, tube
+from .lib import box, compound, cyl, duct, frame, ibeam, merge, pipe, prism_x, prism_y, quarter_ring, rrect, sph, tube
 
 FLOWCOL = {"HRL-02a": "retn", "HRL-02b": "retn", "HRL-03": "suct", "HRL-04": "suct", "HRL-08": "supp"}
 FLOWNAME = {"HRL-02a": "Return trench 900 × 1,000 (from the dryer)", "HRL-02b": "Return trench 900 × 1,000 (to the junction)",
@@ -16,23 +16,80 @@ FLOWSPEC = {"HRL-02a": "28,614 Nm³/h at 100 °C = 10.86 m³/s, 12.1 m/s", "HRL-
             "HRL-08": "48,000 m³/h at 120 °C = 13.33 m³/s from the blower, 11.44 m³/s after the bleed; 12.1 m/s"}
 
 
-def build_flue(R):
+def _flue_solid(a, b, ext=0.0):
+    """Lined flue duct envelope with half-width a, half-height b along the D-26 route: stub, R700 bend, west run."""
     g = G
-    x0, x1, yc, zc = -2150, -g.cXo, g.flueY, -450
-    W, H = 700, 400
-    t_l, t_s = 150, 6
-    outer = box(x0, x1, yc - W / 2 - t_l - t_s, yc + W / 2 + t_l + t_s, zc - H / 2 - t_l - t_s, zc + H / 2 + t_l + t_s)
-    shell = outer.cut(box(x0 - 1, x1 + 1, yc - W / 2 - t_l, yc + W / 2 + t_l, zc - H / 2 - t_l, zc + H / 2 + t_l))
-    lining = box(x0, x1, yc - W / 2 - t_l, yc + W / 2 + t_l, zc - H / 2 - t_l, zc + H / 2 + t_l).cut(box(x0 - 1, x1 + 1, yc - W / 2, yc + W / 2, zc - H / 2, zc + H / 2))
-    flange = frame(x1 - 20, x1, yc - 560, yc + 560, x1 - 21, x1 + 1, yc - 506, yc + 506, zc - 410, zc + 410)
-    flange = box(x1 - 20, x1, yc - 560, yc + 560, zc - 410, zc + 410).cut(box(x1 - 21, x1 + 1, yc - 350, yc + 350, zc - 150, zc + 150))
-    stools = compound(*[box(x - 60, x + 60, yc - 450, yc + 450, -1000, zc - H / 2 - t_l - t_s) for x in (-2000, -1650)])
-    R.add("FLU-01 Lined flue duct", merge(shell, flange), "flue", "fluesteel", tag="FLU-01", title="Lined flue duct (D-10)",
-          spec="700 × 400 clear (0.28 m², ≈5.4 m/s at 800 °C), 6 mm steel, casing flange over the 1,000 × 600 cut-out; on stools in a vented RCC trench",
-          src="D-10 (replaces the Rev H refractory-lined trench)", status="D", note="Skin ≈81 °C, trench RCC ≈64 °C with 45 °C trench air (C-04).")
-    R.add("FLU-02 Flue duct lining", lining, "flue", "module", tag="FLU-02", title="Flue duct lining", spec="100 mm folded module 128 kg/m³ + 50 mm microporous", src="D-10 · C-04", status="D")
-    R.add("FLU-03 Duct stools", stools, "flue", "steel2", tag="FLU-03", title="Flue duct support stools", spec="Fabricated, sliding plates (expansion)", src="D-10", status="D")
-    R.add("FLOW-flue Flue gas", box(x0, -g.lfX, yc - W / 2, yc + W / 2, zc - H / 2, zc + H / 2), "flue", "flue", tag="FLOW", title="Flue gas 800 °C",
+    xc, zc = g.flue_xc, g.flue_zc
+    cx, cy = g.flue_bend_c
+    Rc, ys, yr, xe = g.flue_R, g.flue_ys, g.flue_run_y, g.flue_end_x
+    stub = box(xc - a, xc + a, ys, g.flue_y_ej[1] + ext, zc - b, zc + b)
+    bend = quarter_ring(cx, cy, Rc - a, Rc + a, zc - b, zc + b, (1, -1))
+    run = box(xe - ext, cx, yr - a, yr + a, zc - b, zc + b)
+    return stub.union(bend).union(run)
+
+
+def build_flue(R):
+    """Lined flue duct (D-10 build-up, D-26 route): leaves the south end wall at the SW corner just above the hearth,
+    passes an expansion joint, turns west on an R700 bend in the bottom-left corner of the south burner pit and runs
+    through the pit's west wall into the junction. Every change of direction is radiused; nothing is mitred."""
+    g = G
+    xc, zc = g.flue_xc, g.flue_zc
+    W, H, tl, ts = 700, 400, 150, 6
+    a_o, b_o = W / 2 + tl + ts, H / 2 + tl + ts            # 506 / 356
+    a_l, b_l = W / 2 + tl, H / 2 + tl                      # 500 / 350
+    a_g, b_g = W / 2, H / 2                                # 350 / 200
+    shell = _flue_solid(a_o, b_o).cut(_flue_solid(a_l, b_l, ext=1))
+    lining = _flue_solid(a_l, b_l).cut(_flue_solid(a_g, b_g, ext=1))
+    y0, y1 = g.flue_y_ej
+    fr = lambda y: box(xc - 560, xc + 560, y - 20, y, zc - 410, zc + 410).cut(box(xc - a_l, xc + a_l, y - 21, y + 1, zc - b_l, zc + b_l))
+    flanges = compound(fr(-g.cYo - 12), fr(y1 + 20))
+    bolts = compound(*[cyl((x, y - 20, z), (x, y - 50, z), 8) for y in (-g.cYo - 12,) for x in (xc - 520, xc, xc + 520) for z in (zc - 380, zc + 380)],
+                     *[cyl((x, y + 20, z), (x, y + 50, z), 8) for y in (y1,) for x in (xc - 520, xc, xc + 520) for z in (zc - 380, zc + 380)])
+    ej = box(xc - a_o - 30, xc + a_o + 30, y1 + 20, y0, zc - b_o - 30, zc + b_o + 30).cut(box(xc - a_g, xc + a_g, y1, y0, zc - b_g, zc + b_g))
+    ej = ej.cut(compound(*[box(xc - a_o - 31, xc + a_o + 31, y - 6, y + 6, zc + b_o + 10, zc + b_o + 31) for y in (y0 - 70, y1 + 70)]))
+    ys = g.flue_ys
+    R.add("FLU-01 Lined flue duct", merge(shell, flanges, bolts), "flue", "fluesteel", tag="FLU-01", title="Lined flue duct, south end → R700 bend → junction (D-26)",
+          spec="700 × 400 clear (0.28 m², ≈5.4 m/s at 800 °C); 6 mm shell with 75 × 75 × 6 angle stiffening rings @ 600; flange frames 1,120 × 820 × 20 "
+               "with M16 bolts @ 150 and ceramic rope gaskets; horizontal 90° bend on a 700 centreline radius (inner 350, outer 1,050 on the gas side) in the "
+               "SW corner of the south burner pit; run west through the pit wall sleeve into the junction; slopes 0; total ≈2.1 m",
+          material="IS 2062 E250 shell; bolts 8.8 HDG; outside HR silicone aluminium", src="D-10 (construction) · D-26 (route, owner instruction 21 Nov)", status="D",
+          note="Skin ≈80 °C: guarded where people can reach it (FLU-05).")
+    R.add("FLU-02 Flue duct lining", lining, "flue", "module", tag="FLU-02", title="Flue duct lining 150 mm",
+          spec="100 mm folded module 128 kg/m³ 1430 grade (hot face) + 50 mm microporous; modules on SS 310 M8 studs @ 300 × 300 with SS 310 speed washers; "
+               "bend lined with segmented modules cut on the radius, joints staggered", material="Ceramic fibre 1430 grade; microporous 320 kg/m³; studs SS 310",
+          src="D-10 · C-04", status="D")
+    R.add("FLU-04 Fabric expansion joint", ej, "flue", "rubber", tag="FLU-04", title="Fabric expansion joint at the casing",
+          spec="200 face-to-face, PTFE/glass-fibre multilayer with 50 mm fibre pillow, rated 600 °C gas side; takes the casing's growth and ±15 mm misalignment",
+          material="PTFE-coated glass fabric + SS 304 flanges", src="this design", status="D")
+    # supports: stools on the pit floor and in the link trench, sliding plates
+    cx, cy = g.flue_bend_c
+    pts = [(cx + g.flue_R * math.cos(math.radians(t)), cy + g.flue_R * math.sin(math.radians(t))) for t in (-22, -68)] + [(-1850, g.flue_run_y)]
+    st = []
+    for (x, y) in pts:
+        fl = g.bpit_floor if x > -1500 else g.trench_floor_k["FLUE"]
+        st += [box(x - 150, x + 150, y - 150, y + 150, fl, zc - b_o - 30), box(x - 260, x + 260, y - 260, y + 260, zc - b_o - 30, zc - b_o - 6),
+               box(x - 300, x + 300, y - 300, y + 300, zc - b_o - 6, zc - b_o)]
+    R.add("FLU-03 Duct stools", compound(*st), "flue", "steel2", tag="FLU-03", title="Flue duct stools with PTFE sliding plates",
+          spec="Fabricated from ISMC 150 + 20 mm base plate, 2 × M16 anchors; 3 mm PTFE on SS slide plates; the junction end is the fixed point",
+          material="IS 2062 E250; PTFE/SS 304 slide", src="this design", status="D", qty=str(len(pts)))
+    guard = _flue_solid(a_o + 75, b_o + 75).cut(_flue_solid(a_o + 72, b_o + 72, ext=1)).intersect(box(-1499, 0, -5900, -g.cYo - 230, zc - b_o + 40, zc + b_o + 80))
+    R.add("FLU-05 Personnel guard", guard, "flue", "grating", tag="FLU-05", title="Expanded-metal personnel guard over the flue duct (south pit)",
+          spec="Expanded metal 50 × 25 × 3, 75 off the shell, on bolted brackets; removable in four sections", material="GI expanded metal", src="this design", status="D", alpha=0.45)
+    t = math.radians(-45)
+    rr = g.flue_R + a_o + 21
+    door = box(-20, 25, -260, 260, -170, 170).union(box(25, 45, -40, 40, -20, 20)).rotate((0, 0, 0), (0, 0, 1), -45).translate((cx + rr * math.cos(t), cy + rr * math.sin(t), zc))
+    R.add("FLU-06 Inspection and cleanout door", door, "flue", "steel", tag="FLU-06", title="Inspection and ash-cleanout door on the bend",
+          spec="500 × 300 clear on the outer wall of the bend at 45°, bolted, with a 150 mm fibre plug and rope gasket", material="IS 2062 E250", src="this design", status="D")
+    te = merge(cyl((xc - 200, ys + 25, zc + b_o), (xc - 200, ys + 25, zc + b_o + 180), 14), box(xc - 260, xc - 140, ys - 35, ys + 85, zc + b_o + 180, zc + b_o + 280))
+    pt = merge(cyl((xc + 200, ys + 25, zc + b_o), (xc + 200, ys + 25, zc + b_o + 120), 10),
+               pipe([(xc + 200, ys + 25, zc + b_o + 120), (xc + 200, ys + 25, -500), (-1440, ys + 25, -500), (-1440, -4700, -500)], 6),
+               box(-1495, -1385, -4800, -4600, -620, -380))
+    R.add("FLU-07 Flue thermocouple TE-301", te, "instr", "galv", tag="FLU-07", title="Flue gas thermocouple TE-301",
+          spec="Type K, Inconel 600 MI Ø8, U = 250, in a 1\" SS 310 thermowell on the stub; to the PLC (O-02 commissioning data)", src="this design", status="D")
+    R.add("FLU-08 Furnace pressure tap PT-301", pt, "instr", "panel", tag="FLU-08", title="Furnace pressure transmitter PT-301",
+          spec="±50 Pa low-range ΔP transmitter on the pit wall, ¼\" SS impulse from the stub, condensate pot; set point −2 to −5 Pa at the hearth", src="this design", status="D")
+    passage = box(*g.flue_pass_X, -g.cYi, -g.lfY, *g.flue_pass_z)
+    R.add("FLOW-flue Flue gas", merge(_flue_solid(a_g - 20, b_g - 20), passage), "flue", "flue", tag="FLOW", title="Flue gas 800 °C",
           spec="1,386 Nm³/h at design λ (Rev H 1,296), 1.54 m³/s", src="C-01 · C-07", status="C", alpha=0.45, layer="flow")
 
 
@@ -45,30 +102,48 @@ def build_trenches(R):
     outer, inner = None, None
     for k, (x0, x1, y0, y1) in clears.items():
         t = 250 if k == "MBPIT" else 200
-        zf = -1100 if k == "MBPIT" else -1000
-        o = box(x0 - t, x1 + t, y0 - t, y1 + t, zf - t, 0)
-        i = box(x0 - 1, x1 + 1, y0 - 1, y1 + 1, zf, 10)
+        zf = g.trench_floor_k.get(k, -1000)
+        if k == "FLUE":          # short link between the junction and the south pit wall: side walls and floor only
+            o = box(x0, x1, y0 - t, y1 + t, zf - t, 0)
+            i = box(x0 - 201, x1 + 1, y0 - 1, y1 + 1, zf, 10)
+        else:
+            o = box(x0 - t, x1 + t, y0 - t, y1 + t, zf - t, 0)
+            i = box(x0 - 1, x1 + 1, y0 - 1, y1 + 1, zf, 10)
         outer = o if outer is None else outer.union(o)
         inner = i if inner is None else inner.union(i)
     rcc = outer.cut(inner)
-    rcc = rcc.cut(box(-g.pitX - 210, -g.pitX - 190, g.flueY - 630, g.flueY + 630, -1000, 0))   # open into the furnace pit wall sleeve
+    # junction sump benching (60°) from the -1.000 trench floors down to the -1.350 sump floor
+    jx0, jx1, jy0, jy1 = g.trenches["HRL-03"]
+    zj = g.trench_floor_k["HRL-03"]
+    bench = merge(prism_x([(jy1, zj), (jy1, -1000), (jy1 - 200, zj)], jx0, jx1), prism_x([(jy0, zj), (jy0, -1000), (jy0 + 200, zj)], jx0, jx1))
+    rcc = rcc.union(bench)
     R.add("CIV-10 Loop trenches and mixing-box pit", rcc, "civil", "concrete2", tag="CIV-10", title="Heat-recovery trenches and mixing-box pit (RCC)",
-          spec="RCC 200 walls and floor, waterproofed; clear depth 1,000 (Hold H1); mixing-box pit 1,500 × 1,300, floor −1.100, 250 walls, excavation −1.350",
-          src="Rev H · SH-MB-01 Rev A · HDG", status="O", note="Hold H1: R-02 foundation drawings show −1,400 / −1,000 (O-01).")
+          spec="RCC M25, 200 walls and floor, T12 @ 150, waterproofed (crystalline admixture + external membrane); clear depth 1,000 (Hold H1); "
+               "junction sump floor −1.350 with 60° benching (D-26); flue link floor −1.650; mixing-box pit 1,500 × 1,300, floor −1.100, 250 walls",
+          material="RCC M25, Fe 500D", src="Rev H · SH-MB-01 Rev A · HDG · D-26", status="O", note="Hold H1: R-02 foundation drawings show −1,400 / −1,000 (O-01).")
+    face = box(jx0, jx0 + 75, g.flue_run_y - 380, g.flue_run_y + 380, zj + 75, -300).union(box(jx0, jx1, g.flue_run_y - 380, g.flue_run_y + 380, zj, zj + 75))
+    R.add("HRL-03a Junction impingement facing", face, "loop", "castable", tag="HRL-03a", title="Junction refractory facing opposite the flue inlet",
+          spec="75 mm dense castable on SS 304 V-anchors, west wall and sump floor where the 800 °C flue gas lands; keeps the RCC under 65 °C",
+          material="LC castable 1,500 °C", src="D-26 · C-04", status="D")
     covers = []
     for k, (x0, x1, y0, y1) in g.trenches.items():
         c = box(x0 - 100, x1 + 100, y0 - 100, y1 + 100, -8, 0)
         if k == "HRL-08":
             c = c.cut(cyl((g.bleed[0], g.bleed[1], -20), (g.bleed[0], g.bleed[1], 20), 210))
             c = c.cut(box(g.rb_axis[0] - 101, g.rb_axis[1] + 50, g.rb_axis[2] - 1000, g.rb_axis[2] + 1000, -20, 20))
-        for x in range(int(x0), int(x1), 1000):
-            c = c.cut(box(x - 2, x + 2, y0 - 101, y1 + 101, -9, 1)) if (x1 - x0) > (y1 - y0) else c
+        if (x1 - x0) > (y1 - y0):
+            for x in range(int(x0), int(x1), 1000):
+                c = c.cut(box(x - 2, x + 2, y0 - 101, y1 + 101, -9, 1))
+        else:
+            for y in range(int(y0) + 1000, int(y1), 1000):
+                c = c.cut(box(x0 - 101, x1 + 101, y - 2, y + 2, -9, 1))
         covers.append(c)
     R.add("CIV-11 Trench cover plates", compound(*covers), "civil", "deck", tag="CIV-11", title="Trench cover plates",
-          spec="8 mm chequered plate in 1 m removable sections on embedded angles", src="Rev H · HDG", status="C")
+          spec="8 mm chequered plate in 1 m removable sections on embedded ISA 50 × 50 × 6 nosing with lifting holes; 5 kN/m² pedestrian",
+          material="IS 3502 chequered plate, HDG", src="Rev H · HDG", status="C")
     fx0, fx1, fy0, fy1 = g.flue_trench
-    R.add("CIV-12 Flue trench grating", box(fx0 - 100, fx1, fy0 - 100, fy1 + 100, -40, 0), "civil", "grating", tag="CIV-12", title="Flue trench vented grating",
-          spec="Grating so the trench breathes (D-10); the duct inside is lined", src="D-10", status="D")
+    R.add("CIV-12 Flue trench grating", box(-1950, fx1, fy0 - 100, fy1 + 100, -40, 0), "civil", "grating", tag="CIV-12", title="Flue link vented grating",
+          spec="Serrated grating 40 × 5 @ 30 so the link breathes (D-10); the duct inside is lined", src="D-10 · D-26", status="D")
     for k, (x0, x1, y0, y1) in g.trenches.items():
         R.add(f"FLOW-{k} {FLOWNAME[k]}", box(x0 + 20, x1 - 20, y0 + 20, y1 - 20, -980, -20), "loop", FLOWCOL[k], tag=k, title=FLOWNAME[k],
               spec=FLOWSPEC[k], src="Rev H heat-recovery loop · C-08 · C-09", status="C", alpha=0.35, layer="flow")
@@ -174,33 +249,89 @@ def build_dryer(R):
     R.add("CIV-20 Dryer pit", rcc, "civil", "rccpit", tag="CIV-20", title="Dryer pit (RCC)",
           spec=f"RCC 250 walls, 250 slab; inside RCC {rx1 - rx0:.0f} × {2 * ry:.0f}, clear chamber 6,000 × 7,500 × 1,400 after the 100 mm lining",
           src="Rev H · HDG · D-11 · D-14", status="D")
-    pocket = box(-5600, -4400, oy, oy + 1000, -1200, 0).cut(box(-5400, -4600, oy - 1, oy + 800, -1000, 1))
-    R.add("CIV-21 Chain-drive pocket", pocket, "civil", "rccpit", tag="CIV-21", title="Chain-drive pocket", spec="800 × 800 × 1,000 clear, chequered lid; the 5.5 kW gearmotor stays out of the hot air",
-          src="this design", status="D")
+    pockets, lids = [], []
+    for sy in (1, -1):
+        y0, y1 = sorted((sy * oy, sy * (oy + 1000)))
+        pockets.append(box(-5600, -4400, y0, y1, -1200, 0).cut(box(-5400, -4600, min(sy * (oy - 1), sy * (oy + 800)), max(sy * (oy - 1), sy * (oy + 800)), -1000, 1)))
+        lids.append(box(-5400, -4600, min(sy * oy, sy * (oy + 800)), max(sy * oy, sy * (oy + 800)), 0, 8))
+    R.add("CIV-21 Chain-drive pockets", compound(*pockets), "civil", "rccpit", tag="CIV-21", title="Chain-drive pockets (north and south)",
+          spec="800 × 800 × 1,000 clear each, RCC 200, drained; one per chain strand so each strand has its own drive (D-28)", material="RCC M25",
+          src="this design · D-28", status="D", qty="2")
+    R.add("CIV-21a Pocket lids", compound(*lids), "civil", "deck", tag="CIV-21a", title="Chequered pocket lids", spec="8 mm chequered plate, hinged, padlockable",
+          src="this design", status="D", qty="2")
     lin = box(rx0, rx1, -ry, ry, zf - li, 0).cut(box(X0, X1, -Y, Y, zf, 1))
     for xa, xb, w in ((rx0 - 1, X0 + 1, 500), (X1 - 1, rx1 + 1, 450)):
         lin = lin.cut(box(xa, xb, -w, w, -1000, -300))
     R.add("DRY-10 Pit lining", lin, "dryer", "alu", tag="DRY-10", title="Dryer pit lining",
-          spec="100 mm ceramic-fibre board + 1 mm aluminium liner; RCC face ≈62 °C (C-04)", src="D-14", status="D")
-    deck = box(ox0, ox1, -oy, oy, 0, 250).cut(box(-10350, -9150, -Y, Y, -1, 251)).cut(box(-5850, -4650, -Y, Y, -1, 251))
-    R.add("DRY-11 Top deck and fixed cover", deck, "dryer", "insul", tag="DRY-11", title="Insulated top deck with fixed cover over P2–P3",
-          spec="250 mm insulated steel-framed deck; openings P1 (X −10.35…−9.15) and P4 (X −5.85…−4.65), 1,200 × 7,500", src="D-16 · HDG", status="D")
-    rails = compound(*[box(rx0, rx1, s * 3950 - 25, s * 3950 + 25, 250, 270) for s in (1, -1)])
-    R.add("DRY-12 Door rails", rails, "dryer", "steel", tag="DRY-12", title="Door rails", spec="Flat bar 50 × 20 on the deck", src="SH-RBR-01/02", status="C")
-    for key, xa, d, label in (("DRY-02", -10450, 1, "P1, entry; slides east"), ("DRY-03", -5950, -1, "P4, exit; slides west")):
-        door = box(xa, xa + 1400, -3800, 3800, 300, 550)
-        wheels = [cyl((xa + dx, s * 3950 - 40, 300), (xa + dx, s * 3950 + 40, 300), 90) for dx in (150, 1250) for s in (1, -1)]
-        rack = box(xa - 40, xa + 1460, 4150, 4200, 270, 300)
-        brk = box(xa - 40, xa + 1460, 3800, 4200, 420, 440)
-        px = xa + (1420 if d > 0 else 0)
-        drv = merge(box(px - 220, px + 220, 4230, 4710, 0, 100), box(px - 130, px + 130, 4250, 4530, 100, 360),
-                    cyl((px, 4175, 348), (px, 4230, 348), 54), cyl((px + 130 * d, 4390, 340), (px + 590 * d, 4390, 340), 90))
-        R.add(f"{key} Dryer door {label.split(',')[0]}", merge(door, compound(*wheels)), "dryer", "alu", tag=key, title=f"Dryer door {label}",
-              spec="1,400 × 7,600 × 250 insulated, aluminium skinned; travel 1,450; interlocked with the chain (no index with a door open)",
-              src="SH-RBR-01/02 · HDG", status="C")
-        R.add(f"{key}r Door rack and drive", merge(rack, brk, drv), "dryer", "gear", tag=f"{key}r", title=f"Door rack & pinion drive ({label.split(',')[0]})",
-              spec="Rack m6 1,500 × 60 × 60 EN8 (45–50 HRC); pinion m6 16T PCD 96 EN19; BK50 bevel 1.1 kW 4-pole 75.4:1, 19 rpm, 550 N·m; 2 eccentric backing rollers; Omron D4A-4516N-F limits",
-              src="SH-RBR-01/02", status="C")
+          spec="100 mm ceramic-fibre board 1260 grade on SS 304 M6 studs @ 400 × 400 with Ø40 speed washers, 1 mm aluminium liner pop-riveted; RCC face ≈62 °C (C-04)",
+          material="Ceramic-fibre board 300 kg/m³; aluminium 1100-H14", src="D-14", status="D")
+    # ---- top: perimeter curb, raised centre fixed cover (bridge) over P2-P3, two sliding doors that park under it (D-28)
+    zc_top = 200                                       # curb top
+    yr = 3800                                          # door rails
+    xp1, xp4 = -9000, -6000                            # pinions (fixed), each under its door through the whole travel
+    curb = box(ox0, ox1, -oy, oy, 0, zc_top).cut(box(-10350, -4650, -Y, Y, -1, zc_top + 1))
+    for xp in (xp1, xp4):
+        curb = curb.cut(box(xp - 80, xp + 80, 3800, 3900, 100, zc_top + 1)).cut(box(xp - 25, xp + 25, 3800, oy + 1, 160, zc_top + 1))
+    R.add("DRY-11 Perimeter curb deck", curb, "dryer", "insul", tag="DRY-11", title="Insulated perimeter curb deck",
+          spec="200 mm steel-framed curb on the pit walls (ISMC 200 frame, 150 mm mineral wool 96 kg/m³, 3 mm chequered top, 1 mm aluminium soffit); "
+               "openings P1 (X −10.35 … −9.15) and P4 (X −5.85 … −4.65), 1,200 × 7,500; carries the door rails",
+          material="IS 2062 E250; mineral wool", src="D-16 · D-28", status="D")
+    bx0, bx1 = -9150, -5850
+    bridge = box(bx0, bx1, -oy, oy, 550, 800)
+    lips = [box(bx0, bx0 + 50, -3850, 3850, 505, 550), box(bx1 - 50, bx1, -3850, 3850, 505, 550)]
+    girders = [_hollow_box(bx0, bx1, sy * 3900, sy * oy, zc_top, 550, 8) for sy in (1, -1)]
+    R.add("DRY-11a Raised centre fixed cover", merge(bridge, compound(*lips)), "dryer", "insul", tag="DRY-11a", title="Raised fixed cover over P2–P3 (door garage under it)",
+          spec="3,300 × 8,200 × 250 insulated (200 mm mineral wool, 3 mm top, 1 mm aluminium soffit), underside +0.550; both sliding doors park beneath it; "
+               "end lips to +0.505 with silicone brush seals wipe the door tops", material="IS 2062 E250; mineral wool; aluminium", src="Owner instruction 21 Nov · D-28", status="D")
+    R.add("DRY-11b Cover girders", compound(*girders), "dryer", "steel", tag="DRY-11b", title="Fixed-cover box girders",
+          spec="Fabricated box 200 × 350 × 8 along both long sides on the curb, enclose the door garage at the sides; door-drive shafts pass under them through the curb",
+          material="IS 2062 E250", src="D-28", status="D", qty="2")
+    rails = compound(*[box(ox0, ox1, s * yr - 20, s * yr + 20, zc_top, zc_top + 30) for s in (1, -1)])
+    R.add("DRY-12 Door rails", rails, "dryer", "steel", tag="DRY-12", title="Door rails",
+          spec="Flat bar 40 × 30 EN8 on the curb, full length both sides; north rail V-profile (guides the doors), south rail flat", material="EN8", src="SH-RBR-01/02 · D-28", status="C")
+    trav = B.v("dryer.door_travel")
+    for key, xa, d, label, xp in (("DRY-02", -10425, 1, "P1, entry; slides east under the fixed cover", xp1), ("DRY-03", -6125, -1, "P4, exit; slides west under the fixed cover", xp4)):
+        xb = xa + 1550
+        body = box(xa, xb, -3850, 3850, 260, 500)
+        whx = (xa + 200, xb - 200)
+        for x in whx:
+            for s in (1, -1):
+                body = body.cut(box(x - 90, x + 90, s * yr - 45, s * yr + 45, 259, 400))
+        frame_ = box(xa, xb, -3850, 3850, 495, 500).union(box(xa, xb, -3850, 3850, 260, 265))
+        wheels = [cyl((x, s * yr - 20, 300), (x, s * yr + 20, 300), 70) for x in whx for s in (1, -1)]
+        axles = [cyl((x, s * yr - 45, 300), (x, s * yr + 45, 300), 20) for x in whx for s in (1, -1)]
+        seals = [box(xa, xb, s * 3850, s * 3860, 270, 490) for s in (1, -1)] + [box(x0_, x0_ + 10, -3850, 3850, 270, 490) for x0_ in (xa - 10, xb)]
+        rack = box(xa, xb, 3825, 3850, 235, 260)
+        cam_x = xa - 110 if d > 0 else xb
+        cam = box(cam_x, cam_x + 110, 3870, 3940, 290, 320).union(box(cam_x + (100 if d > 0 else 0), cam_x + (110 if d > 0 else 10), 3850, 3940, 290, 400))
+        anim = f"dry{key[-1]}:{d * trav:.0f}"
+        R.add(f"{key} Dryer door {label.split(',')[0]}", compound(merge(body, frame_), *wheels, *axles, *seals), "dryer", "alu", tag=key, title=f"Dryer door {label}",
+              spec=f"1,550 × 7,700 × 240 insulated: RHS 100 × 100 × 4 box frame, 200 mm mineral wool 96 kg/m³, 1 mm aluminium skins; 4 Ø140 wheels in pockets "
+                   f"(V-groove north, flat south) with anti-lift hooks; travel {trav:.0f} under the raised fixed cover; silicone seals on all edges; "
+                   "interlocked with the chain (no index with a door open)", material="IS 4923 frame; aluminium 1100; mineral wool", src="SH-RBR-01/02 · HDG · D-28", status="D", anim=anim)
+        R.add(f"{key}k Door rack and cam {label.split(',')[0]}", merge(rack, cam), "dryer", "gear", tag=f"{key}k", title=f"Door rack and limit cam ({label.split(',')[0]})",
+              spec="Rack m6 1,550 × 25 × 60 EN8 (45–50 HRC teeth) under the north edge of the door only (one-side drive, D-28); cam plate for the four limit switches",
+              material="EN8 induction hardened", src="SH-RBR-01/02 · D-28", status="C", anim=anim)
+        pin = merge(cyl((xp, 3825, 181), (xp, 3850, 181), 54), cyl((xp, 3850, 181), (xp, oy + 150, 181), 18))
+        gm = merge(box(xp - 220, xp + 220, oy + 20, oy + 500, 0, 20), box(xp - 130, xp + 130, oy + 150, oy + 450, 20, 330),
+                   cyl((xp + d * 130, oy + 300, 175), (xp + d * 500, oy + 300, 175), 90), box(xp - 60, xp + 60, oy + 20, oy + 150, 120, 250))
+        R.add(f"{key}r Door drive {label.split(',')[0]}", merge(pin, gm), "dryer", "motor", tag=f"{key}r", title=f"Door drive, one side only ({label.split(',')[0]})",
+              spec="Pinion m6 16T PCD 96 EN19 on a Ø40 shaft through the curb to a BK50 bevel gearmotor 1.1 kW 4-pole 75.4:1 (19 rpm, 550 N·m) with brake on the north side; "
+                   "eccentric backing roller keeps the rack in mesh; south side runs free on its rail (the box frame takes the skew)", src="SH-RBR-01/02 · D-28", status="C")
+        if d > 0:
+            sw_x = [-10525, -10325, -9440, -9240]
+        else:
+            sw_x = [-4475, -4675, -5560, -5760]
+        sw = [box(min(sw_x) - 40, max(sw_x) + 40, 3940, 3990, zc_top, zc_top + 40)]
+        for x in sw_x:
+            sw += [box(x - 25, x + 25, 3945, 3985, zc_top + 40, zc_top + 140), cyl((x, 3945, zc_top + 120), (x, 3925, zc_top + 120), 6),
+                   cyl((x, 3925, zc_top + 120), (x, 3925, zc_top + 160), 4), cyl((x, 3918, zc_top + 160), (x, 3932, zc_top + 160), 16)]
+        ends = (xa - 60, -7540) if d > 0 else (xb + 10,)
+        buf = [box(x, x + (80 if x == -7540 else 50), s * 3700, s * 3740, zc_top, zc_top + 120) for x in ends for s in (1, -1)]
+        R.add(f"{key}L Door limit switches {label.split(',')[0]}", compound(*sw, *buf), "instr", "yellow", tag=f"{key}L", title=f"4 limit switches and end buffers ({label.split(',')[0]})",
+              spec="Mounting bar L 50 × 50 × 6 on the north curb (in ambient air, clear of the garage), 4 heavy-duty roller-lever switches IP67: OPEN slow-down, OPEN stop, "
+                   "CLOSE slow-down, CLOSE stop (200 apart at each end); rubber end buffers beyond each stop; switches wired to the PLC with the chain interlock",
+              material="Switch: Omron D4A-4516N-F class, IP67", src="SH-RBR-01/02 · owner instruction 21 Nov · D-28", status="D", qty="4")
     # perforated boxes (D-12)
     for key, xa, xb, face_x, col, label, spec in (
             ("DRY-04", X0, X0 + 350, X0 + 350, "supp", "Perforated supply box", "centre fed through 1,000 × 700 from the discharge trench; feed 12.6 m/s, hole ΔP / feed VP = 2.05 (C-09)"),
@@ -217,7 +348,8 @@ def build_dryer(R):
           spec="Supply 1,000 × 700; return 900 × 700; GI with flexible seal", src="D-12", status="D")
     # chain conveyor
     xh, xt, zc, R_s = -5000, -10000, -500, 150
-    shafts = compound(cyl((xt, -3700, zc), (xt, 3700, zc), 35), cyl((xh, -3700, zc), (xh, 4700, zc), 35))
+    shafts = compound(*[cyl((xh, sy * 3500, zc), (xh, sy * 4700, zc), 35) for sy in (1, -1)], *[cyl((xt, sy * 3500, zc), (xt, sy * 3720, zc), 35) for sy in (1, -1)])
+    takeups = compound(*[box(xt - 160, xt + 160, min(sy * 3640, sy * 3745), max(sy * 3640, sy * 3745), zc - 130, zc + 130) for sy in (1, -1)])
     spro, chain, rails2 = [], [], []
     for y in (-3550, 3550):
         for x in (xt, xh):
@@ -235,22 +367,41 @@ def build_dryer(R):
     R.add("DRY-07 Chain conveyor", compound(*chain), "dryer", "chain", tag="DRY-07", title="Two-strand chain conveyor",
           spec="Roller chain, 2 strands at Y ±3,550, head/tail at X −5.0 / −10.0 m; indexes one position (1,500) per pulse; hard stop at P4",
           src="HDG · dryer instrumentation notes", status="C")
-    R.add("DRY-08 Sprockets and shafts", merge(compound(*spro), shafts), "dryer", "gear", tag="DRY-08", title="Sprockets 12T PCD 300 and shafts",
-          spec="12T PCD 300 keyed; shafts Ø70; head shaft runs through the north wall to the drive pocket", src="HDG", status="C")
+    R.add("DRY-08 Sprockets and stub shafts", merge(compound(*spro), shafts, takeups), "dryer", "gear", tag="DRY-08", title="Sprockets 12T PCD 300 on independent stub shafts",
+          spec="12T PCD 300 keyed; head shafts Ø70 split per strand, each through its own side wall to its own drive pocket (no line shaft across the chamber, D-28); "
+               "tail sprockets on stub shafts in screw take-ups (±75) inside the lining", material="EN8 shafts; C45 sprockets", src="HDG · D-28", status="D")
     R.add("DRY-09 Chain guides", compound(*rails2), "dryer", "steel", tag="DRY-09", title="Chain guide rails and return shoes", spec="UHMW wear strip on angle; posts @ 1,200", src="HDG", status="C")
     sad = compound(*[box(x - 140, x + 140, y - 70, y + 70, zc + R_s + 12, zc + R_s + 152) for x in g.dP for y in (-3550, 3550)])
     R.add("DRY-13 Saddles", sad, "dryer", "steel", tag="DRY-13", title="Chain saddles (jig ends ride on them)", spec="4 pairs at P1–P4, 1,500 pitch", src="HDG", status="C")
-    gm = merge(box(-5300, -4700, 4200, 4750, -1000, -900), box(-5200, -4800, 4350, 4650, -900, -520), cyl((-5000, 4200, -500), (-5000, 4350, -500), 160))
-    R.add("DRY-14 Chain drive", gm, "dryer", "motor", tag="DRY-14", title="Chain drive 5.5 kW geared motor",
-          spec="5.5 kW, timed pulses from the PLC, one position per index; VFD or torque limiter open (O-14)", src="Dryer instrumentation notes", status="C")
-    tw = merge(cyl((-7500, 3000, 250), (-7500, 3000, -750), 10), box(-7560, -7440, 2940, 3060, 250, 340))
+    gms = []
+    for sy in (1, -1):
+        y = lambda d: sy * d
+        gms += [box(-5300, -4700, min(y(4200), y(4750)), max(y(4200), y(4750)), -1000, -900),
+                box(-5200, -4800, min(y(4350), y(4650)), max(y(4350), y(4650)), -900, -520),
+                cyl((-5000, y(4200), -500), (-5000, y(4350), -500), 160), cyl((-5000, y(4650), -500), (-5000, y(4720), -500), 60)]
+    R.add("DRY-14 Chain drives (one per strand)", compound(*gms), "dryer", "motor", tag="DRY-14", title="Chain drives: one gearmotor per strand",
+          spec="2 × 3.7 kW helical-bevel gearmotors, one in each side pocket on its own head stub shaft (D-28); each on a VFD with an encoder, run as an electronic "
+               "line shaft (master/follower) so both strands index together; skew trip if the strands differ by > 10 mm at P4; timed pulses from the PLC",
+          src="Owner instruction 21 Nov · D-28 · dryer instrumentation notes", status="D", qty="2")
+    tw = merge(cyl((-7500, 3000, 800), (-7500, 3000, -750), 10), box(-7560, -7440, 2940, 3060, 800, 890))
     btn = merge(box(ox0 - 300, ox0 - 150, -oy - 300, -oy - 150, 0, 1200), box(ox0 - 290, ox0 - 160, -oy - 310, -oy - 290, 1000, 1100))
-    arm = box(ox1 - 150, ox1 + 50, oy - 450, oy - 250, 250, 500)
+    wx = g.dP[3] - 100
+    whisk = merge(box(wx - 50, wx + 50, Y - 10, Y, 20, 190), box(wx - 20, wx + 20, Y - 110, Y - 10, 120, 140), box(wx - 30, wx + 30, Y - 110, Y - 60, 140, 230),
+                  cyl((wx, Y - 85, 120), (wx, Y - 85, -100), 2), sph((wx, Y - 85, -100), 6))
     R.add("DRY-15 Dryer Pt100", tw, "instr", "galv", tag="DRY-15", title="Dryer temperature Pt100", spec="Duplex Pt100 Class A, Ø8 SS316, 1,000 insertion, through the fixed cover", src="Dryer instrumentation notes", status="C")
-    R.add("DRY-16 P1 LOADED station and P4 trip arm", merge(btn, arm), "instr", "yellow", tag="DRY-16", title="P1 LOADED pushbutton + P4 trip-arm limit switch",
-          spec="Switches stay in ambient air; P4 detector is a steel trip arm through the insulated wall", src="Dryer instrumentation notes", status="C")
+    R.add("DRY-16 P1 LOADED station", btn, "instr", "yellow", tag="DRY-16", title="P1 LOADED pushbutton station",
+          spec="Pedestal station at the SW corner: P1 LOADED (green), CHAIN STOP (red), key switch for manual index", src="Dryer instrumentation notes", status="C")
+    R.add("DRY-17 P4 cat-whisker switch", whisk, "instr", "yellow", tag="DRY-17", title="P4 arrival: cat-whisker switch on a wall cantilever",
+          spec="Spring-rod (cat-whisker) limit switch, any-direction actuation, on a 100 mm cantilever bracket from the north wall top at X −5.35; the Ø3 SS whisker hangs to −0.100 "
+               "in the path of the jig-beam end and trips 100 before P4; head rated 150 °C, cable in SS conduit to a JB outside", material="Switch head high-temperature (A); bracket SS 304",
+          src="Owner instruction 21 Nov · D-28", status="D")
     R.add("FLOW-dryer Dryer air", box(X0 + 350, X1 - 350, -3500, 3500, -1250, -150), "dryer", "supp", tag="FLOW", title="Drying air 120 → 100 °C",
           spec="11.44 m³/s cross-flow ≈1.6 m/s through all four loads; ≈209 kW (C-08)", src="Rev H · C-08", status="C", alpha=0.18, layer="flow")
+
+
+def _hollow_box(x0, x1, y0, y1, z0, z1, t):
+    x0, x1 = sorted((x0, x1)); y0, y1 = sorted((y0, y1))
+    return box(x0, x1, y0, y1, z0, z1).cut(box(x0 - 1, x1 + 1, y0 + t, y1 - t, z0 + t, z1 - t))
 
 
 def build_stack(R):
@@ -288,195 +439,6 @@ def build_stack(R):
     R.add("FLOW-bleed Bleed gas", cyl((bx, by, -480), (bx, by, 3900), 150), "stack", "bleed", tag="FLOW", title="Bleed 120 °C", spec="4,729 Nm³/h", src="C-08", status="C", alpha=0.35, layer="flow")
 
 
-def _shs(x0, x1, y0, y1, z0, z1, t=6):
-    """Square hollow section along Z."""
-    o = box(x0, x1, y0, y1, z0, z1)
-    return o.cut(box(min(x0, x1) + t, max(x0, x1) - t, min(y0, y1) + t, max(y0, y1) - t, z0 - 1, z1 + 1))
-
-
-def _hollow(x0, x1, y0, y1, z0, z1, t=3, open_ends=""):
-    """Sheet-metal box duct; open_ends in 'xXyY' leaves those faces open."""
-    x0, x1 = sorted((x0, x1)); y0, y1 = sorted((y0, y1)); z0, z1 = sorted((z0, z1))
-    ix0 = x0 - 1 if "x" in open_ends else x0 + t
-    ix1 = x1 + 1 if "X" in open_ends else x1 - t
-    iy0 = y0 - 1 if "y" in open_ends else y0 + t
-    iy1 = y1 + 1 if "Y" in open_ends else y1 - t
-    return box(x0, x1, y0, y1, z0, z1).cut(box(ix0, ix1, iy0, iy1, z0 + t, z1 - t))
-
-
-def build_enclosure(R):
-    """Zinc fume enclosure on the casing deck (SHIVAS ZEN annexure; D-24 frame and wall plane, D-25 door lift).
-
-    Wall plane = casing outer face. Corner posts stand on the deck over the casing walls; both long sides open full length
-    from the deck to the door-head girt and close with vertical-lift skimming doors outside the wall plane. Two roof covers
-    split on the kettle centreline with a 200 mm rope slot and slide outward on end-wall rails. Lateral slot ducts inside
-    both top edges collect into a header outside the north end wall and leave as Ø700 to the bag filter."""
-    g = G
-    xo, yo = g.cXo, g.cYo
-    zb = g.deck
-    zt = zb + B.v("enclosure.height")                 # +4.976 top of the top beams
-    zg = zb + 2200                                     # door-head girt underside +2.456
-    slot = B.v("enclosure.rope_slot")
-    lift = B.v("enclosure.door_lift")
-    travel = B.v("enclosure.cover_travel")
-    sill = B.v("enclosure.window_sill")
-    S = (-1, 1)
-    # ---------------------------------------------------------------- frame
-    corner = [_shs(sx * (xo - 120), sx * xo, sy * (yo - 120), sy * yo, zb + 16, zt - 150) for sx in S for sy in S]
-    inter = [_shs(sx * (xo - 120), sx * xo, y - 60, y + 60, zg + 300, zt - 150) for sx in S for y in (-2050, 0, 2050)]
-    plates = [box(sx * (xo - 200), sx * xo, sy * (yo - 200), sy * yo, zb, zb + 16) for sx in S for sy in S]
-    R.add("ZEN-01 Enclosure posts", compound(*corner, *inter, *plates), "enclosure", "zenframe", tag="ZEN-01",
-          title="Enclosure posts SHS 120 × 120 × 6",
-          spec="4 corner posts on 200 × 200 × 16 base plates on the deck over the casing walls; 6 intermediate posts above the door-head girts",
-          src="ZEN annexure · D-24", status="A", note="Member sizes to be confirmed by a structural check.")
-    girts = [ibeam((sx * (xo - 70), -(yo - 120), zg + 150), (sx * (xo - 70), yo - 120, zg + 150), h=300, b=140, tw=7.5, tf=12.4) for sx in S]
-    def chan_y(sx):      # ISMC 150 along Y, web on the wall plane, toes inward
-        return merge(box(sx * (xo - 5.4), sx * xo, -yo, yo, zt - 150, zt), box(sx * (xo - 75), sx * xo, -yo, yo, zt - 9, zt),
-                     box(sx * (xo - 75), sx * xo, -yo, yo, zt - 150, zt - 141))
-    def chan_x(sy):
-        return merge(box(-xo, xo, sy * (yo - 5.4), sy * yo, zt - 150, zt), box(-xo, xo, sy * (yo - 75), sy * yo, zt - 9, zt),
-                     box(-xo, xo, sy * (yo - 75), sy * yo, zt - 150, zt - 141))
-    R.add("ZEN-02 Door-head girts ISMB 300", compound(*girts), "enclosure", "zenframe", tag="ZEN-02", title="Door-head girts ISMB 300",
-          spec=f"Both long sides at +{(zg)/1000:.3f}, spanning the corner posts (7.97 m) so the skimming openings are clear full length; carry the upper wall and the lateral duct",
-          src="D-24", status="A", note="Deflection to be checked with the duct and wall loads.")
-    R.add("ZEN-03 Top beams ISMC 150", compound(*[chan_y(sx) for sx in S], *[chan_x(sy) for sy in S]), "enclosure", "zenframe", tag="ZEN-03",
-          title="Top ring beams ISMC 150", spec="Ring at +4.826 → +4.976; the end beams carry the roof-cover rails", src="ZEN annexure", status="A")
-    # ---------------------------------------------------------------- sheeting and stiffeners
-    upper = [box(sx * xo, sx * (xo + 3), -yo, yo, zg, zt) for sx in S]
-    ends = []
-    for sy in S:
-        e = box(-(xo + 3), xo + 3, sy * yo, sy * (yo + 3), zb, zt)
-        if sy > 0:
-            for sx in S:
-                e = e.cut(box(sx * 761, sx * 1261, yo - 10, yo + 20, 4126, 4826))
-        ends.append(e)
-    st = []
-    for sx in S:
-        for z in (3300, 4100):
-            st += [box(sx * (xo + 3), sx * (xo + 53), -3980, 3980, z, z + 6), box(sx * (xo + 47), sx * (xo + 53), -3980, 3980, z - 50, z)]
-    for sy in S:
-        for z in (1100, 1900, 2700, 3500):
-            st += [box(-(xo - 120), xo - 120, sy * (yo + 3), sy * (yo + 53), z, z + 6), box(-(xo - 120), xo - 120, sy * (yo + 47), sy * (yo + 53), z - 50, z)]
-    R.add("ZEN-04 Wall sheeting", compound(*upper, *ends), "enclosure", "zen", tag="ZEN-04", title="Wall sheeting 3 mm MS",
-          spec="End walls full height; long sides above the door head; sheet flush with the casing outer face; north wall cut for the two lateral ducts",
-          src="ZEN annexure · D-24", status="C")
-    R.add("ZEN-04a Sheet stiffeners", compound(*st), "enclosure", "zenframe", tag="ZEN-04a", title="Sheet stiffeners L 50 × 50 × 6",
-          spec="Horizontal at ≈800 pitch on the outside faces", src="ZEN annexure", status="A")
-    # ---------------------------------------------------------------- skimming doors (vertical lift, outside the wall plane)
-    guides = []
-    for sx in S:
-        for sy in S:
-            gd = box(sx * (xo + 3), sx * 1530, sy * 3995, sy * yo, 150, zt - 150)
-            guides.append(gd.cut(box(sx * 1452, sx * 1518, sy * 3980, sy * 4050, 140, zt)))
-    R.add("ZEN-06 Door guides", compound(*guides), "enclosure", "zenframe", tag="ZEN-06", title="Skimming-door guide channels",
-          spec="On the corner posts, outside the wall plane, +0.150 → +4.826", src="D-24", status="D")
-    zd0, zd1 = 200, zg + 50
-    wins = [(yc, sill, sill + 600) for yc in (-3000, -1000, 1000, 3000)]
-    for sx, nm in ((-1, "west"), (1, "east")):
-        a0, a1 = sx * 1460, sx * 1510
-        skin = merge(box(a0, sx * 1463, -4040, 4040, zd0, zd1), box(sx * 1507, a1, -4040, 4040, zd0, zd1))
-        edge = _hollow(a0, a1, -4040, 4040, zd0, zd1, t=50, open_ends="xX")
-        ribs = [box(sx * 1463, sx * 1507, y - 20, y + 20, zd0, zd1) for y in (-2000, 0, 2000)]
-        rails = [box(sx * 1463, sx * 1507, -4040, 4040, z - 20, z + 20) for z in (sill - 60, sill + 660)]
-        door = merge(skin, edge)
-        for (yc, z0, z1) in wins:
-            door = door.cut(box(a0 - 1, a1 + 1, yc - 300, yc + 300, z0, z1))
-        frames = [box(sx * 1510, sx * 1525, yc - 350, yc + 350, z0 - 50, z1 + 50).cut(box(sx * 1505, sx * 1530, yc - 300, yc + 300, z0, z1)) for (yc, z0, z1) in wins]
-        lugs = [box(sx * 1470, sx * 1500, y - 40, y + 40, zd1, zd1 + 80).cut(cyl((sx * 1460, y, zd1 + 45), (sx * 1510, y, zd1 + 45), 15)) for y in (-3000, 3000)]
-        R.add(f"ZEN-07{'a' if sx < 0 else 'b'} Skimming door {nm}", compound(door, *ribs, *rails, *frames, *lugs), "enclosure", "zen",
-              tag=f"ZEN-07{'a' if sx < 0 else 'b'}", title=f"Skimming door, {nm} side (vertical lift)",
-              spec=f"7,970 × 2,306 × 50 framed panel, 3 mm skins; 4 × 600 × 600 toughened-glass windows in removable frames, sill +{sill/1000:.3f}; lift {lift:.0f} full, {B.v('enclosure.skim_stop'):.0f} skimming stop",
-              src="ZEN annexure · D-24 · D-25", status="D", anim=f"door{'W' if sx < 0 else 'E'}")
-        glass = compound(*[box(sx * 1482, sx * 1490, yc - 300, yc + 300, z0, z1) for (yc, z0, z1) in wins])
-        R.add(f"ZEN-07{'a' if sx < 0 else 'b'}G Door windows {nm}", glass, "enclosure", "glass", tag=f"ZEN-07{'a' if sx < 0 else 'b'}G",
-              title=f"Door windows, {nm} (4 × 600 × 600 toughened glass)", spec="8 mm toughened glass in removable frames", src="ZEN annexure", status="C",
-              alpha=0.35, anim=f"door{'W' if sx < 0 else 'E'}")
-        zh = zt - 176
-        hb = []
-        for y in (-3000, 3000):
-            hb += [box(sx * (xo + 3), sx * 1600, y - 60, y + 60, zt - 40, zt), box(sx * 1400, sx * 1570, y - 120, y + 120, zh, zt - 40),
-                   cyl((sx * 1485, y, zh - 60), (sx * 1485, y, zh), 30)]
-        prox = [box(sx * 1530, sx * 1560, sy * 4020, sy * 4060, z, z + 40) for sy in (1,) for z in (zd0 + 20, zd0 + 20 + B.v("enclosure.skim_stop"), zd0 + 20 + lift)]
-        R.add(f"ZEN-08{'a' if sx < 0 else 'b'} Door hoists {nm}", compound(*hb, *prox), "enclosure", "motor", tag=f"ZEN-08{'a' if sx < 0 else 'b'}",
-              title=f"Door chain hoists, {nm} (2 × electric, synchronised)", spec="2 electric chain hoists at 8 m/min on brackets off the top beam; proximity limits closed / skimming stop / full lift",
-              src="ZEN annexure", status="C")
-        top_ch = zh - 60
-        ch = compound(*[cyl((sx * 1485, y, zd1 + 45), (sx * 1485, y, top_ch), 8) for y in (-3000, 3000)])
-        R.add(f"ZEN-08{'a' if sx < 0 else 'b'}C Hoist chains {nm}", ch, "enclosure", "chain", tag=f"ZEN-08{'a' if sx < 0 else 'b'}C",
-              title=f"Hoist load chains, {nm}", spec="Shown at the closed position", src="ZEN annexure", status="C", anim=f"chain{'W' if sx < 0 else 'E'}:{top_ch:.0f}")
-    # ---------------------------------------------------------------- roof covers (split on the centreline, slide outward)
-    yr0, yr1 = yo - 75, yo - 40                      # rail on the end-beam top flange
-    rails, outr = [], []
-    for sy in S:
-        rails += [box(-3000, 3000, sy * yr0, sy * yr1, zt, zt + 30), box(-3000, 3000, sy * (yo - 32), sy * (yo - 2), zt, zt + 40)]
-        for sx in S:
-            outr += [merge(box(sx * (xo + 3), sx * 3000, sy * (yo - 5.4), sy * yo, zt - 150, zt), box(sx * (xo + 3), sx * 3000, sy * (yo - 75), sy * yo, zt - 9, zt),
-                           box(sx * (xo + 3), sx * 3000, sy * (yo - 75), sy * yo, zt - 150, zt - 141)),
-                     cyl((sx * 1531, sy * (yo - 40), zt - 1000), (sx * 2500, sy * (yo - 40), zt - 151), 40)]
-    lim = [box(sx * x - 30, sx * x + 30, sy * (yo + 5), sy * (yo + 45), zt - 60, zt) for sx in S for sy in (1,) for x in (1330, 2950)]
-    R.add("ZEN-05 Cover rails and outriggers", compound(*rails, *outr), "enclosure", "zenframe", tag="ZEN-05", title="Roof-cover rails, racks and outriggers",
-          spec=f"Rail 35 × 30 and m4 rack on both end beams, extended on ISMC 150 outriggers with Ø80 knee braces to X ±3.0 m; travel {travel:.0f} per cover",
-          src="ZEN annexure · D-24", status="D")
-    R.add("ZEN-05a Cover limit switches", compound(*lim), "enclosure", "yellow", tag="ZEN-05a", title="Roof-cover limit switches (2 per cover)",
-          spec="Closed and open positions, on the north rail", src="ZEN annexure", status="C")
-    zc0 = zt + 150
-    for sx, nm in ((-1, "west"), (1, "east")):
-        xa, xb = sx * slot / 2, sx * (xo + 100)
-        fr = box(xa, xb, -(yo + 100), yo + 100, zc0, zc0 + 100).cut(box(sx * (slot / 2 + 50), sx * (xo + 50), -(yo + 50), yo + 50, zc0 - 1, zc0 + 101))
-        cross = [box(xa, xb, y - 25, y + 25, zc0, zc0 + 100) for y in (-2700, -1350, 0, 1350, 2700)]
-        sheet = box(xa, xb, -(yo + 100), yo + 100, zc0 + 100, zc0 + 103)
-        seal = box(sx * slot / 2, sx * (slot / 2 + 25), -(yo + 100), yo + 100, zt + 60, zc0)
-        carr, wh = [], []
-        for sy in S:
-            carr.append(box(sx * 250, sx * 1350, sy * (yo - 120), sy * (yo + 10), zt + 100, zc0))
-            wh += [cyl((sx * x, sy * (yo - 77.5), zt + 80), (sx * x, sy * (yo - 37.5), zt + 80), 50) for x in (400, 1200)]
-            wh.append(cyl((sx * 850, sy * (yo - 32), zt + 82), (sx * 850, sy * (yo - 2), zt + 82), 42))      # pinion on the rack
-        shaft = cyl((sx * 850, -(yo - 2), zt + 82), (sx * 850, yo - 2, zt + 82), 25)
-        pb = [box(sx * 800, sx * 900, y - 50, y + 50, zt + 60, zt + 100) for y in (-2700, 0, 2700)]
-        motor = merge(box(sx * 760, sx * 940, yo + 10, yo + 260, zt + 30, zt + 230), cyl((sx * 850, yo - 2, zt + 82), (sx * 850, yo + 10, zt + 82), 25))
-        R.add(f"ZEN-09{'a' if sx < 0 else 'b'} Roof cover {nm}", compound(fr, *cross, sheet, seal, *carr, *wh, shaft, *pb), "enclosure", "zen",
-              tag=f"ZEN-09{'a' if sx < 0 else 'b'}", title=f"Sliding roof cover, {nm}",
-              spec=f"{abs(xb - xa):,.0f} × {2 * (yo + 100):,.0f} ISMC 100 frame, 3 mm sheet; end carriages with 4 wheels; line shaft with pinions on both racks; brush seal on the {slot:.0f} mm rope slot",
-              src="ZEN annexure · D-24", status="C", anim=f"roof{'W' if sx < 0 else 'E'}")
-        R.add(f"ZEN-09{'a' if sx < 0 else 'b'}M Cover drive {nm}", motor, "enclosure", "motor", tag=f"ZEN-09{'a' if sx < 0 else 'b'}M",
-              title=f"Roof-cover drive, {nm}: 0.5 HP geared motor, VFD", spec="On the north carriage, driving the line shaft", src="ZEN annexure", status="C",
-              anim=f"roof{'W' if sx < 0 else 'E'}")
-    # ---------------------------------------------------------------- lighting
-    lamps, lens = [], []
-    for sy in S:
-        for x in (-500, 500):
-            lamps += [box(x - 150, x + 150, sy * (yo - 200), sy * (yo - 60), zt - 760, zt - 540), box(x - 30, x + 30, sy * (yo - 60), sy * yo, zt - 680, zt - 620)]
-            lens.append(box(x - 130, x + 130, sy * (yo - 206), sy * (yo - 200), zt - 740, zt - 560))
-    R.add("ZEN-10 LED floods", compound(*lamps), "enclosure", "black", tag="ZEN-10", title="LED floodlights 4 × 200 W", spec="Two on each end wall, inside, aimed at the bath",
-          src="ZEN annexure", status="C")
-    R.add("ZEN-10a LED flood lenses", compound(*lens), "enclosure", "lamp", tag="ZEN-10a", title="LED flood lenses", spec="IP66", src="ZEN annexure", status="C")
-    # ---------------------------------------------------------------- lateral suction ducts, header, outlet
-    zd_a, zd_b = 4126, 4826
-    lat = []
-    for sx in S:
-        d = _hollow(sx * 761, sx * 1261, -4050, yo + 3, zd_a, zd_b, open_ends="Y")
-        for yc in range(-3500, 3501, 1000):
-            d = d.cut(box(sx * 755, sx * 767, yc - 350, yc + 350, zd_a + 60, zd_a + 90))
-        lat.append(d)
-    R.add("ZEN-11 Lateral slot ducts", compound(*lat), "enclosure", "galv", tag="ZEN-11", title="Lateral slot plenums 500 × 700",
-          spec="Inside both top edges, 3 mm MS; 8 slots 700 × 30 per side on the inner face (≈16.5 m/s) with sliding shutters; 10,000 m³/h per side, plenum 7.9 m/s at the north end (under half the slot velocity, C-15); cleaning doors",
-          src="ZEN annexure · C-15", status="D")
-    hdr = _hollow(-1261, 1261, yo + 3, yo + 603, zd_a, zd_b).cut(cyl((0, yo + 590, 4476), (0, yo + 610, 4476), 350))
-    for sx in S:
-        hdr = hdr.cut(box(sx * 764, sx * 1258, yo, yo + 8, zd_a + 3, zd_b - 3))
-    yo2 = 5300
-    zo = 4476
-    out = pipe([(0, yo + 603, zo), (0, yo2, zo), (4600, yo2, zo)], 350).cut(pipe([(0, yo + 590, zo), (0, yo2, zo), (4620, yo2, zo)], 347))
-    fl = tube((4600, yo2, zo), (4620, yo2, zo), 420, 347)
-    col = merge(box(3925, 4075, yo2 - 75, yo2 + 75, 0, zo - 400), box(3800, 4200, yo2 - 400, yo2 + 400, zo - 400, zo - 350), box(3800, 4200, yo2 - 200, yo2 + 200, 0, 20))
-    R.add("ZEN-12 Suction header", hdr, "enclosure", "galv", tag="ZEN-12", title="Suction header 600 × 700 outside the north end wall",
-          spec="Joins both slot plenums; Ø700 outlet on the north face; 13.2 m/s", src="ZEN annexure · D-24", status="D")
-    R.add("ZEN-13 Outlet duct Ø700", merge(out, fl), "enclosure", "galv", tag="ZEN-13", title="Outlet duct Ø700 to the zinc-fume bag filter",
-          spec="20,000 m³/h, 14.4 m/s; north then east at +4.476 to a flanged stub at X +4.6 m", src="HDG · ZEN annexure", status="A",
-          note="Bag-filter (ZFE) location and fan are open (O-16).")
-    R.add("ZEN-13a Outlet duct support", col, "enclosure", "zenframe", tag="ZEN-13a", title="Outlet duct support column", spec="ISHB 150 with saddle", src="this design", status="D")
-
-
 def build_loads(R):
     g = G
     jigs = []
@@ -506,5 +468,6 @@ def build(R):
     build_blower(R)
     build_dryer(R)
     build_stack(R)
+    from .enclosure import build_enclosure
     build_enclosure(R)
     build_loads(R)
