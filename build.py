@@ -26,7 +26,13 @@ def stage_site():
     shutil.copy(ROOT / "viewer" / "drawings.html", site / "drawings.html")
     import base64
     glb = (ROOT / "out" / "cad" / "SHV-FUR-6700.glb").read_bytes()
-    (site / "model.glb.b64.txt").write_text(base64.b64encode(glb).decode())   # claude.ai does not serve .glb
+    b64 = base64.b64encode(glb).decode()                                   # claude.ai does not serve .glb
+    chunk = 11_000_000                                                     # keep each text file well under the 16 MB limit
+    for old in site.glob("model.glb.b64*.txt"):
+        old.unlink()
+    parts = [b64[i:i + chunk] for i in range(0, len(b64), chunk)]
+    for i, c in enumerate(parts):
+        (site / ("model.glb.b64.txt" if i == 0 else f"model.glb.b64.{i}.txt")).write_text(c)
     (site / "model.glb").unlink(missing_ok=True)
     for f in ("parts.json", "flows.json", "viewer_data.json"):
         shutil.copy(ROOT / "out" / "cad" / f, site / f)

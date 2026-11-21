@@ -306,7 +306,14 @@ async function fetchProgress(url, label) {
 }
 async function loadModel() {
   try { const r = await fetch('model.glb', {method: 'HEAD'}); if (r.ok) return await (await fetchProgress('model.glb', 'Loading the model')).arrayBuffer(); } catch (e) { /* fall through */ }
-  const txt = await (await fetchProgress('model.glb.b64.txt', 'Loading the model')).text();
+  // the base64 text comes in chunks (model.glb.b64.txt, model.glb.b64.1.txt, ...) to stay under the host's file-size limit
+  let txt = await (await fetchProgress('model.glb.b64.txt', 'Loading the model (1)')).text();
+  for (let i = 1; i < 20; i++) {
+    let r; try { r = await fetch(`model.glb.b64.${i}.txt`); } catch (e) { break; }
+    if (!r.ok) break;
+    ldt.textContent = `Loading the model (${i + 1})`;
+    txt += await r.text();
+  }
   ldt.textContent = 'Decoding the model';
   const bin = atob(txt.replace(/\s+/g, '')); const u8 = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
